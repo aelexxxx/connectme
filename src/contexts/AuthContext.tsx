@@ -27,6 +27,7 @@ export interface GlassmorphismOptions {
 export interface UserSettings {
   theme: 'light' | 'dark' | 'system';
   themeStyle: 'default' | 'glassmorphism';
+  layoutMode: 'stacked' | 'horizontal'; // Added layoutMode
   glassmorphismOptions?: GlassmorphismOptions;
   notifications: {
     newConnectionEmail: boolean;
@@ -75,11 +76,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const DEFAULT_USER_SETTINGS: UserSettings = {
   theme: 'system',
   themeStyle: 'default',
+  layoutMode: 'stacked', // Default layout mode
   glassmorphismOptions: {
-    gradientColor1: undefined, // Let CSS defaults take precedence (e.g. hsla(var(--glass-color-one-light-raw), var(--glass-opacity-light)))
-    gradientColor2: undefined, // Let CSS defaults take precedence
+    gradientColor1: undefined, 
+    gradientColor2: undefined, 
     animatedGradient: false,
-    blurIntensity: 12, // Default blur intensity from CSS variables like --glass-blur-intensity-dark/light
+    blurIntensity: 12, 
   },
   notifications: {
     newConnectionEmail: true,
@@ -110,11 +112,12 @@ const PROXY_USER_SETTINGS: UserSettings = {
   ...DEFAULT_USER_SETTINGS,
   theme: 'dark',
   themeStyle: 'glassmorphism',
+  layoutMode: 'stacked', // Can be 'horizontal' if desired for proxy default
   glassmorphismOptions: {
     ...DEFAULT_USER_SETTINGS.glassmorphismOptions,
     animatedGradient: true,
-    gradientColor1: '#4a00e0', // Example purple
-    gradientColor2: '#8e2de2', // Example violet
+    gradientColor1: '#4a00e0', 
+    gradientColor2: '#8e2de2', 
     blurIntensity: 10,
   },
 };
@@ -152,6 +155,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
+      // Ensure settings are fully populated with defaults if some are missing
       parsedUser.settings = { 
         ...DEFAULT_USER_SETTINGS, 
         ...(parsedUser.settings || {}),
@@ -276,9 +280,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       };
       updateProfile({ settings: newSettings });
     } else if (isGuest) {
-      // For guest mode, settings are not persisted but can be applied visually for the session.
-      // This part might need more thought if guest settings need to be stored (e.g. in session storage)
-      // For now, we are not saving guest settings.
       console.warn("Attempted to update settings in guest mode. Guest settings are not persisted.");
     }
   };
@@ -380,31 +381,25 @@ export const useAuth = () => {
 
 export const useAuthSettings = () => {
   const context = useAuth();
-  // For guests or users without settings yet, provide defaults.
-  // If user is null (which it would be for guest or before proxy sets it), use default settings.
-  // If user is proxy user, use their specific settings.
-  // If user is a regular logged-in user, use their settings or fall back to defaults.
   let baseSettings = DEFAULT_USER_SETTINGS;
   if (context.user) {
     baseSettings = context.user.settings || DEFAULT_USER_SETTINGS;
   } else if (context.isGuest) {
-    // Guests currently don't have persisted settings different from default.
-    // If they did, logic would go here.
     baseSettings = DEFAULT_USER_SETTINGS;
   }
   
   const fullyPopulatedSettings: UserSettings = {
-    ...DEFAULT_USER_SETTINGS, // Start with all defaults
-    ...baseSettings, // Override with user's base settings (theme, themeStyle)
-    glassmorphismOptions: { // Deep merge glassmorphismOptions
+    ...DEFAULT_USER_SETTINGS,
+    ...baseSettings,
+    glassmorphismOptions: { 
       ...DEFAULT_USER_SETTINGS.glassmorphismOptions,
-      ...(baseSettings.glassmorphismOptions || {}), // Override with user's specific glass options
+      ...(baseSettings.glassmorphismOptions || {}), 
     },
-    notifications: { // Deep merge notifications
+    notifications: { 
       ...DEFAULT_USER_SETTINGS.notifications,
       ...(baseSettings.notifications || {}),
     },
-    privacy: { // Deep merge privacy
+    privacy: { 
       ...DEFAULT_USER_SETTINGS.privacy,
       ...(baseSettings.privacy || {}),
     },

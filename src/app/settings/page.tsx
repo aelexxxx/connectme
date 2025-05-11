@@ -10,11 +10,11 @@ import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useAuthSettings } from "@/contexts/AuthContext";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Sun, Moon, Laptop, Bell, Lock, Trash2, Palette, ShieldAlert, Layers, Wand2, Sparkles } from "lucide-react";
+import { Sun, Moon, Laptop, Bell, Lock, Trash2, Palette, ShieldAlert, Layers, Wand2, Sparkles, Rows, Columns } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input"; 
-import React, { useEffect } from "react"; // Import useEffect
+import React, { useEffect } from "react";
 
 export default function SettingsPage() {
   const { settings, updateUserSettings, isGuest, user, deleteAccount, loading: authLoading } = useAuthSettings();
@@ -22,7 +22,6 @@ export default function SettingsPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Wait for auth state to load before redirecting
     if (authLoading) {
       return;
     }
@@ -51,6 +50,11 @@ export default function SettingsPage() {
     updateUserSettings({ themeStyle: style });
     toast({ title: "Theme Style Updated", description: `Style set to ${style}.` });
   };
+  
+  const handleLayoutModeChange = (mode: 'stacked' | 'horizontal') => {
+    updateUserSettings({ layoutMode: mode });
+    toast({ title: "Layout Mode Updated", description: `View set to ${mode}.`});
+  };
 
   const handleGlassmorphismOptionChange = (option: keyof NonNullable<typeof settings.glassmorphismOptions>, value: any) => {
     updateUserSettings({
@@ -75,7 +79,6 @@ export default function SettingsPage() {
   const handleDeleteAccount = () => {
     deleteAccount(); 
     toast({ title: "Account Deleted", description: "Your account has been successfully deleted.", variant: "destructive"});
-    // router.push('/login'); // AuthContext will handle redirect on logout/delete
   };
 
 
@@ -111,6 +114,32 @@ export default function SettingsPage() {
                     <span className="font-semibold capitalize">{themeOption}</span>
                   </Label>
                 ))}
+              </RadioGroup>
+            </div>
+            <Separator />
+             <div>
+              <Label className="text-base font-medium">App Layout View</Label>
+              <RadioGroup
+                value={settings.layoutMode}
+                onValueChange={(value: 'stacked' | 'horizontal') => handleLayoutModeChange(value)}
+                className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2"
+              >
+                 <Label
+                    htmlFor="layout-mode-stacked"
+                    className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary cursor-pointer transition-all"
+                  >
+                    <RadioGroupItem value="stacked" id="layout-mode-stacked" className="sr-only" />
+                    <Rows className="mb-2 h-7 w-7" />
+                    <span className="font-semibold">Stacked View</span>
+                  </Label>
+                  <Label
+                    htmlFor="layout-mode-horizontal"
+                    className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary cursor-pointer transition-all"
+                  >
+                    <RadioGroupItem value="horizontal" id="layout-mode-horizontal" className="sr-only" />
+                    <Columns className="mb-2 h-7 w-7" />
+                    <span className="font-semibold">Horizontal Tabs View</span>
+                  </Label>
               </RadioGroup>
             </div>
             <Separator />
@@ -152,7 +181,7 @@ export default function SettingsPage() {
                       <Input
                         id="glass-color-1"
                         type="color"
-                        value={settings.glassmorphismOptions?.gradientColor1 || '#60a5fa'} // Default to a visible color for picker
+                        value={settings.glassmorphismOptions?.gradientColor1 || '#60a5fa'} 
                         onChange={(e) => handleGlassmorphismOptionChange('gradientColor1', e.target.value)}
                         className="mt-1 w-full h-10 p-1"
                       />
@@ -162,7 +191,7 @@ export default function SettingsPage() {
                       <Input
                         id="glass-color-2"
                         type="color"
-                        value={settings.glassmorphismOptions?.gradientColor2 || '#c084fc'} // Default to a visible color for picker
+                        value={settings.glassmorphismOptions?.gradientColor2 || '#c084fc'} 
                         onChange={(e) => handleGlassmorphismOptionChange('gradientColor2', e.target.value)}
                         className="mt-1 w-full h-10 p-1"
                       />

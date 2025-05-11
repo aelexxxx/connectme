@@ -1,12 +1,13 @@
 
 "use client";
 import type { ReactNode } from 'react';
-import React, { useState, useEffect } from 'react'; // Import React
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { Home, User, Users, LogOut, Settings, Terminal, UserCircle, ChevronRight, Settings2, UserCog, Shapes, Package } from 'lucide-react';
+import { Home, User, Users, LogOut, Settings, Terminal, UserCircle, ChevronRight, Settings2, UserCog, Shapes, Package, Rows, Columns } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,8 +16,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useAuth } from '@/contexts/AuthContext';
-import { getCommunityById, getSubPageById } from '@/lib/communityData'; // Import community data functions
+import { useAuth, useAuthSettings } from '@/contexts/AuthContext';
+import { getCommunityById, getSubPageById } from '@/lib/communityData'; 
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -39,6 +40,8 @@ const staticPageDetails: { [key: string]: { name: string; icon: JSX.Element; hre
 
 export default function AppLayout({ children }: AppLayoutProps) {
   const { user, logout, isGuest, loading } = useAuth();
+  const { settings, updateUserSettings } = useAuthSettings();
+  const layoutMode = settings.layoutMode || 'stacked';
   const router = useRouter();
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
@@ -66,68 +69,48 @@ export default function AppLayout({ children }: AppLayoutProps) {
     const segments = path.split('/').filter(Boolean);
     const breadcrumbs: BreadcrumbItem[] = [];
 
-    // Handle root path explicitly, default to Dashboard
     if (path === '/') {
       if (staticPageDetails['/dashboard']) {
         breadcrumbs.push({ ...staticPageDetails['/dashboard'] });
       } else {
-        // Fallback if /dashboard is somehow not in staticPageDetails
         breadcrumbs.push({ name: 'Dashboard', href: '/dashboard', icon: <Home className="h-5 w-5" /> });
       }
       return breadcrumbs;
     }
 
-    if (segments.length === 0) return []; // Should not happen if path !== '/'
+    if (segments.length === 0) return []; 
 
-    // First segment (top-level page like 'dashboard', 'profile', 'communities', 'settings')
     const firstSegmentKey = `/${segments[0]}`;
     if (staticPageDetails[firstSegmentKey]) {
       breadcrumbs.push({ ...staticPageDetails[firstSegmentKey] });
     } else {
-      // Fallback for unknown top-level paths
       breadcrumbs.push({ 
         name: segments[0].charAt(0).toUpperCase() + segments[0].slice(1), 
         href: firstSegmentKey, 
-        icon: <Package className="h-5 w-5" /> // Generic icon
+        icon: <Package className="h-5 w-5" /> 
       });
     }
     
-    // Handle /communities/[communityId]/[subPageId]
-    // segments[0] is 'communities'
-    // segments[1] is communityId
-    // segments[2] is subPageId
     if (segments[0] === 'communities' && segments.length > 1) {
       const communityId = segments[1];
       const community = getCommunityById(communityId);
       
       if (community) {
-        // This adds the community name to the breadcrumbs array.
-        // e.g., if path is /communities/local-run-club, breadcrumbs is now [{Communities}, {Local Run Club}]
-        // if path is /communities/local-run-club/chat, breadcrumbs is now [{Communities}, {Local Run Club}] (subpage added next)
         breadcrumbs.push({ name: community.name, href: `/communities/${community.id}` });
         
-        if (segments.length > 2) { // Check if there's a subPageId
+        if (segments.length > 2) { 
           const subPageId = segments[2];
           const subPage = getSubPageById(community.id, subPageId);
           if (subPage) {
-            // This adds the subPage name.
-            // e.g., breadcrumbs is now [{Communities}, {Local Run Club}, {Chat}]
             breadcrumbs.push({ name: subPage.name, href: `/communities/${community.id}/${subPage.id}` });
           } else {
-            // Fallback for subPageId if not found (e.g. direct navigation to non-existent subpage)
-            // breadcrumbs becomes [{Communities}, {Local Run Club}, {nonExistentSubPageId}]
             breadcrumbs.push({ name: subPageId, href: `/communities/${community.id}/${subPageId}` });
           }
         }
       } else {
-        // Fallback for communityId if community itself not found 
-        // (e.g. direct navigation to /communities/non-existent-community-id)
-        // breadcrumbs becomes [{Communities}, {nonExistentCommunityId}]
         breadcrumbs.push({ name: communityId, href: `/communities/${communityId}` });
       }
     }
-    // Add more specific nested route logic here if needed, e.g. /settings/account, /profile/edit etc.
-
     return breadcrumbs;
   };
   
@@ -175,10 +158,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
           
           <div className="flex items-center gap-1 overflow-hidden text-ellipsis whitespace-nowrap">
             {breadcrumbItems.map((item, index) => (
-              <React.Fragment key={item.href + '-' + index}> {/* Added index to key for safety */}
+              <React.Fragment key={item.href + '-' + index}>
                 {index > 0 && <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />}
                 <Link href={item.href} className="flex items-center gap-1 hover:underline flex-shrink-0" title={item.name}>
-                  {/* Show icon ONLY for the first breadcrumb item (the primary page section like Dashboard, Communities, Settings) */}
                   {index === 0 && item.icon && React.cloneElement(item.icon, { className: "h-5 w-5 text-foreground"})}
                   <span className={`text-foreground ${index > 0 ? 'truncate max-w-[100px] sm:max-w-[150px] md:max-w-[200px]' : 'font-medium'}`}>{item.name}</span>
                 </Link>
@@ -193,7 +175,17 @@ export default function AppLayout({ children }: AppLayoutProps) {
           </div>
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+           <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => updateUserSettings({ layoutMode: layoutMode === 'stacked' ? 'horizontal' : 'stacked' })}
+              title={`Switch to ${layoutMode === 'stacked' ? 'Horizontal Tabs View' : 'Stacked View'}`}
+              className="h-9 w-9"
+            >
+              {layoutMode === 'stacked' ? <Columns className="h-5 w-5" /> : <Rows className="h-5 w-5" />}
+              <span className="sr-only">Toggle Layout Mode</span>
+            </Button>
           {user || isGuest ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -252,24 +244,22 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </div>
       </header>
       
-      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card p-1 shadow-[0_-2px_5px_-1px_rgba(0,0,0,0.1)] md:hidden">
-        <div className="grid grid-cols-4 gap-1">
-          {mobileNavItems.map((item) => (
-            <Link
-              key={`mobile-${item.label}`}
-              href={item.href}
-              className={`flex flex-col items-center rounded-md p-2 transition-colors hover:bg-accent/10 ${
-                pathname.startsWith(item.href) ? 'text-primary' : 'text-muted-foreground hover:text-primary' // Use startsWith for active state
-              }`}
-            >
-              {item.icon}
-              <span className="mt-1 text-xs font-medium">{item.label}</span>
-            </Link>
-          ))}
-        </div>
-      </nav>
+      {layoutMode === 'horizontal' && (
+        <Tabs value={pathname} className="sticky top-16 z-20 w-full border-b bg-background/90 backdrop-blur-sm">
+          <TabsList className="grid w-full grid-cols-5 h-auto">
+            {Object.values(staticPageDetails).map(page => (
+              <TabsTrigger key={page.href} value={page.href} asChild className="flex-shrink-0 data-[state=active]:shadow-lg data-[state=active]:bg-card">
+                <Link href={page.href} className="flex flex-col items-center justify-center h-auto py-2.5 px-2 text-xs">
+                  {React.cloneElement(page.icon, {className: "h-5 w-5 mb-1"})}
+                  <span>{page.name}</span>
+                </Link>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      )}
 
-      <main className="flex-1 p-4 sm:p-6 md:p-8 pb-20 md:pb-8">
+      <main className={`flex-1 p-4 sm:p-6 md:p-8 ${layoutMode === 'stacked' || (layoutMode === 'horizontal' && isGuest) ? 'pb-20 md:pb-8' : 'pb-8'}`}>
         <div className="mx-auto max-w-6xl space-y-6">
          {children}
         </div>
@@ -277,7 +267,26 @@ export default function AppLayout({ children }: AppLayoutProps) {
        <footer className="py-4 text-center text-sm text-muted-foreground border-t">
         © {new Date().getFullYear()} ConnectMe. All rights reserved.
       </footer>
+
+      {/* Show mobile nav only in stacked mode OR if guest in horizontal (as tabs are not for guests) */}
+      {(layoutMode === 'stacked' || (layoutMode === 'horizontal' && isGuest)) && (
+        <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card p-1 shadow-[0_-2px_5px_-1px_rgba(0,0,0,0.1)] md:hidden">
+          <div className="grid grid-cols-4 gap-1">
+            {mobileNavItems.map((item) => (
+              <Link
+                key={`mobile-${item.label}`}
+                href={item.href}
+                className={`flex flex-col items-center rounded-md p-2 transition-colors hover:bg-accent/10 ${
+                  pathname.startsWith(item.href) ? 'text-primary' : 'text-muted-foreground hover:text-primary'
+                }`}
+              >
+                {item.icon}
+                <span className="mt-1 text-xs font-medium">{item.label}</span>
+              </Link>
+            ))}
+          </div>
+        </nav>
+      )}
     </div>
   );
 }
-
