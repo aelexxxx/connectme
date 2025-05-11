@@ -6,7 +6,6 @@ import { useAuth, User as AuthUser } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Edit, Link as LinkIcon, Briefcase, MapPin, Twitter, Linkedin, Github, Globe, Rss, UserCircle } from "lucide-react";
 import ProfileEditForm from "@/components/profile/ProfileEditForm";
@@ -14,6 +13,17 @@ import QrCodeDisplay from "@/components/profile/QrCodeDisplay";
 import SocialLinksManager from "@/components/profile/SocialLinksManager";
 import BlogManager from "@/components/profile/BlogManager";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const socialIcons: { [key: string]: JSX.Element } = {
   twitter: <Twitter className="h-5 w-5 text-sky-500" />,
@@ -96,19 +106,43 @@ export default function ProfilePage() {
                 {user.status && <p className="text-md text-accent mt-1 italic">"{user.status}"</p>}
               </div>
               {!isGuest && (
-                <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                  <DialogTrigger asChild>
+                <Sheet open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                  <SheetTrigger asChild>
                     <Button variant="outline" className="mt-4 md:mt-0">
                       <Edit className="mr-2 h-4 w-4" /> Edit Profile
                     </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-lg">
-                    <DialogHeader>
-                      <DialogTitle>Edit Your Profile</DialogTitle>
-                    </DialogHeader>
-                    <ProfileEditForm user={user} onSave={() => setIsEditDialogOpen(false)} />
-                  </DialogContent>
-                </Dialog>
+                  </SheetTrigger>
+                  <SheetContent side="bottom" className="p-0 flex flex-col max-h-[90vh] rounded-t-xl">
+                    <div className="pt-4 px-4">
+                      <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted-foreground/30 mb-4 cursor-grab" />
+                      <SheetHeader className="text-left">
+                        <SheetTitle>Edit Your Profile</SheetTitle>
+                        <SheetDescription>
+                          Make changes to your profile here. Click save when you&apos;re done.
+                        </SheetDescription>
+                      </SheetHeader>
+                    </div>
+                    
+                    <ScrollArea className="flex-1 overflow-y-auto">
+                      <div className="p-4">
+                        <ProfileEditForm 
+                          user={user} 
+                          onSave={() => setIsEditDialogOpen(false)} 
+                          formId="profile-edit-form"
+                        />
+                      </div>
+                    </ScrollArea>
+                    
+                    <SheetFooter className="p-4 border-t bg-background">
+                      <SheetClose asChild>
+                        <Button variant="outline">Cancel</Button>
+                      </SheetClose>
+                      <Button type="submit" form="profile-edit-form" className="bg-accent hover:bg-accent/90 text-accent-foreground">
+                        Save Changes
+                      </Button>
+                    </SheetFooter>
+                  </SheetContent>
+                </Sheet>
               )}
             </div>
           </CardContent>

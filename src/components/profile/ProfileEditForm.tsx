@@ -47,9 +47,10 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 interface ProfileEditFormProps {
   user: User;
   onSave: () => void;
+  formId: string;
 }
 
-export default function ProfileEditForm({ user, onSave }: ProfileEditFormProps) {
+export default function ProfileEditForm({ user, onSave, formId }: ProfileEditFormProps) {
   const { updateProfile } = useAuth();
   const { toast } = useToast();
 
@@ -143,7 +144,7 @@ export default function ProfileEditForm({ user, onSave }: ProfileEditFormProps) 
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} id={formId} className="space-y-6">
         <FormField
           control={form.control}
           name="name"
@@ -255,9 +256,7 @@ export default function ProfileEditForm({ user, onSave }: ProfileEditFormProps) 
             </FormItem>
           )}
         />
-        <div className="flex justify-end">
-            <Button type="submit" className="bg-accent hover:bg-accent/90 text-accent-foreground">Save Changes</Button>
-        </div>
+        {/* Save button is now in SheetFooter in parent component */}
       </form>
     </Form>
   );
