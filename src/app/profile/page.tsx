@@ -30,10 +30,10 @@ export default function ProfilePage() {
   const [profileUrl, setProfileUrl] = useState("");
 
   useEffect(() => {
-    if (user) {
-      // Assuming profile URLs are like /user/[userId] or similar
-      // For this mock, we'll use the current path or a generic one
-      setProfileUrl(typeof window !== "undefined" ? `${window.location.origin}/profile` : ""); // Or generate a shareable link
+    if (typeof window !== "undefined") {
+      // Generate a more unique profile URL if user ID is available
+      const userSpecificPath = user ? `/user/${user.id}` : '/profile';
+      setProfileUrl(`${window.location.origin}${userSpecificPath}`); 
     }
   }, [user]);
 
@@ -83,12 +83,12 @@ export default function ProfilePage() {
       <div className="space-y-8">
         {/* Profile Header Card */}
         <Card className="overflow-hidden shadow-xl">
-          <div className="h-32 md:h-48 bg-gradient-to-r from-primary/80 to-accent/80" data-ai-hint="abstract background" />
+          <div className="h-32 md:h-48 bg-gradient-to-r from-primary/80 to-accent/80" data-ai-hint="abstract gradient" />
           <CardContent className="p-6 pt-0">
             <div className="flex flex-col md:flex-row items-center md:items-end gap-4 -mt-16 md:-mt-20">
               <Avatar className="h-32 w-32 md:h-40 md:w-40 border-4 border-card shadow-lg">
-                <AvatarImage src={user.photoUrl || `https://picsum.photos/seed/${user.name}/160/160`} alt={user.name} data-ai-hint="profile avatar" />
-                <AvatarFallback className="text-4xl">{user.name?.charAt(0).toUpperCase()}</AvatarFallback>
+                <AvatarImage src={user.photoUrl || `https://picsum.photos/seed/${user.name || 'user'}/160/160`} alt={user.name || 'User'} data-ai-hint="user profile" />
+                <AvatarFallback className="text-4xl">{user.name?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
               </Avatar>
               <div className="flex-1 pt-4 md:pt-0 text-center md:text-left">
                 <h1 className="text-3xl font-bold text-foreground">{user.name}</h1>
