@@ -106,6 +106,39 @@ const MOCK_USER_BASE: Omit<User, 'id' | 'email' | 'name'> = {
   settings: { ...DEFAULT_USER_SETTINGS },
 };
 
+const PROXY_USER_SETTINGS: UserSettings = {
+  ...DEFAULT_USER_SETTINGS,
+  theme: 'dark',
+  themeStyle: 'glassmorphism',
+  glassmorphismOptions: {
+    ...DEFAULT_USER_SETTINGS.glassmorphismOptions,
+    animatedGradient: true,
+    gradientColor1: '#4a00e0', // Example purple
+    gradientColor2: '#8e2de2', // Example violet
+    blurIntensity: 10,
+  },
+};
+
+const PROXY_USER_DATA: User = {
+  id: 'proxy@example.com',
+  email: 'proxy@example.com',
+  name: 'Proxy User',
+  photoUrl: `https://picsum.photos/seed/proxy_user_connectme/200/200`,
+  bio: 'This is the default proxy user. Explore all features of ConnectMe! This profile demonstrates various functionalities like social links, blog posts, and customizable settings.',
+  status: 'Demonstrating ConnectMe 🚀',
+  socialLinks: [
+    { id: 'sl_proxy_github', platform: 'github', url: 'https://github.com/connectme-proxy' },
+    { id: 'sl_proxy_linkedin', platform: 'linkedin', url: 'https://linkedin.com/in/connectme-proxy' },
+    { id: 'sl_proxy_website', platform: 'website', url: 'https://proxy.connectme.example' },
+  ],
+  blogPosts: [
+    { id: 'bp_proxy_1', title: 'Exploring ConnectMe as Proxy', content: 'Welcome! This profile is set up to demonstrate the ConnectMe application features. Feel free to navigate around and see how things work.', date: new Date(Date.now() - 86400000 * 1).toISOString() },
+    { id: 'bp_proxy_2', title: 'Feature Showcase: Glassmorphism', content: 'The current theme is set to glassmorphism with an animated gradient. You can change this in the settings!', date: new Date(Date.now() - 3600000 * 5).toISOString() },
+  ],
+  settings: PROXY_USER_SETTINGS,
+};
+
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isGuest, setIsGuest] = useState(false); 
@@ -116,9 +149,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const storedUser = localStorage.getItem('connectme-user');
     const storedGuest = localStorage.getItem('connectme-guest');
+
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
-      // Ensure settings exist, merge with defaults if not fully present
       parsedUser.settings = { 
         ...DEFAULT_USER_SETTINGS, 
         ...(parsedUser.settings || {}),
@@ -138,6 +171,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(parsedUser);
     } else if (storedGuest === 'true') {
       setIsGuest(true);
+    } else {
+      // Default to Proxy User if no stored user and not explicitly guest
+      setUser(PROXY_USER_DATA);
+      setIsGuest(false);
+      updateUserStorage(PROXY_USER_DATA); // Persist proxy user for session consistency
     }
     setLoading(false);
   }, []);
@@ -343,7 +381,17 @@ export const useAuth = () => {
 export const useAuthSettings = () => {
   const context = useAuth();
   // For guests or users without settings yet, provide defaults.
-  const baseSettings = context.user?.settings || DEFAULT_USER_SETTINGS;
+  // If user is null (which it would be for guest or before proxy sets it), use default settings.
+  // If user is proxy user, use their specific settings.
+  // If user is a regular logged-in user, use their settings or fall back to defaults.
+  let baseSettings = DEFAULT_USER_SETTINGS;
+  if (context.user) {
+    baseSettings = context.user.settings || DEFAULT_USER_SETTINGS;
+  } else if (context.isGuest) {
+    // Guests currently don't have persisted settings different from default.
+    // If they did, logic would go here.
+    baseSettings = DEFAULT_USER_SETTINGS;
+  }
   
   const fullyPopulatedSettings: UserSettings = {
     ...DEFAULT_USER_SETTINGS, // Start with all defaults
@@ -371,3 +419,4 @@ export const useAuthSettings = () => {
     loading: context.loading,
   };
 };
+
