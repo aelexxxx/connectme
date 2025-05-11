@@ -11,7 +11,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const FindSocialMediaLinksInputSchema = z.object({
+const FindSocialMediaLinksInputSchema = z.object({
   name: z.string().describe("The full name of the person."),
   bio: z.string().describe("A short biography of the person."),
   photoSeed: z.string().describe("A seed (often a username-like string, e.g., 'jane_doe') used for generating a profile photo, which can be a hint for social media usernames."),
@@ -21,7 +21,7 @@ export const FindSocialMediaLinksInputSchema = z.object({
 
 export type FindSocialMediaLinksInput = z.infer<typeof FindSocialMediaLinksInputSchema>;
 
-export const ComputedSocialLinkSchema = z.object({
+const ComputedSocialLinkSchema = z.object({
   platform: z.string().toLowerCase().describe("The social media platform name in lowercase (e.g., 'linkedin', 'twitter', 'instagram', 'github', 'wikipedia', 'personal_blog_or_website')."),
   url: z.string().url().describe("The full URL to the profile or page."),
   justification: z.string().describe("A brief (1-2 sentences) explanation why this link is believed to be correct and relevant to the person."),
@@ -29,7 +29,7 @@ export const ComputedSocialLinkSchema = z.object({
 
 export type ComputedSocialLink = z.infer<typeof ComputedSocialLinkSchema>;
 
-export const FindSocialMediaLinksOutputSchema = z.object({
+const FindSocialMediaLinksOutputSchema = z.object({
   socialLinks: z.array(ComputedSocialLinkSchema).describe("A list of suggested social media links or relevant web pages."),
 });
 
