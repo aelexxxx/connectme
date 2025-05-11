@@ -66,41 +66,72 @@ export default function AppLayout({ children }: AppLayoutProps) {
     const segments = path.split('/').filter(Boolean);
     const breadcrumbs: BreadcrumbItem[] = [];
 
-    if (segments.length === 0) return [];
+    // Handle root path explicitly, default to Dashboard
+    if (path === '/') {
+      if (staticPageDetails['/dashboard']) {
+        breadcrumbs.push({ ...staticPageDetails['/dashboard'] });
+      } else {
+        // Fallback if /dashboard is somehow not in staticPageDetails
+        breadcrumbs.push({ name: 'Dashboard', href: '/dashboard', icon: <Home className="h-5 w-5" /> });
+      }
+      return breadcrumbs;
+    }
 
-    // First segment (top-level page)
-    const firstSegmentPath = `/${segments[0]}`;
-    if (staticPageDetails[firstSegmentPath]) {
-      breadcrumbs.push({ ...staticPageDetails[firstSegmentPath] });
+    if (segments.length === 0) return []; // Should not happen if path !== '/'
+
+    // First segment (top-level page like 'dashboard', 'profile', 'communities', 'settings')
+    const firstSegmentKey = `/${segments[0]}`;
+    if (staticPageDetails[firstSegmentKey]) {
+      breadcrumbs.push({ ...staticPageDetails[firstSegmentKey] });
     } else {
-      // Fallback for unknown top-level paths (though ideally all known top-levels are in staticPageDetails)
-      breadcrumbs.push({ name: segments[0].charAt(0).toUpperCase() + segments[0].slice(1), href: firstSegmentPath, icon: <Package className="h-5 w-5" /> });
+      // Fallback for unknown top-level paths
+      breadcrumbs.push({ 
+        name: segments[0].charAt(0).toUpperCase() + segments[0].slice(1), 
+        href: firstSegmentKey, 
+        icon: <Package className="h-5 w-5" /> // Generic icon
+      });
     }
     
-    // Handle /communities/[communityId]
-    if (segments[0] === 'communities' && segments[1]) {
-      const community = getCommunityById(segments[1]);
+    // Handle /communities/[communityId]/[subPageId]
+    // segments[0] is 'communities'
+    // segments[1] is communityId
+    // segments[2] is subPageId
+    if (segments[0] === 'communities' && segments.length > 1) {
+      const communityId = segments[1];
+      const community = getCommunityById(communityId);
+      
       if (community) {
+        // This adds the community name to the breadcrumbs array.
+        // e.g., if path is /communities/local-run-club, breadcrumbs is now [{Communities}, {Local Run Club}]
+        // if path is /communities/local-run-club/chat, breadcrumbs is now [{Communities}, {Local Run Club}] (subpage added next)
         breadcrumbs.push({ name: community.name, href: `/communities/${community.id}` });
-      } else if (segments.length > 1 && breadcrumbs.length === 1) { // if community is the current page, don't add ID as a sub-breadcrumb
-         breadcrumbs.push({ name: segments[1], href: `/communities/${segments[1]}` }); // Fallback to ID
-      }
-
-      // Handle /communities/[communityId]/[subPageId]
-      if (segments[2]) {
-        const subPage = community ? getSubPageById(community.id, segments[2]) : null;
-        if (subPage) {
-          breadcrumbs.push({ name: subPage.name, href: `/communities/${community!.id}/${subPage.id}` });
-        } else if (breadcrumbs.length === 2) { // if subpage is the current page
-           breadcrumbs.push({ name: segments[2], href: `/communities/${segments[1]}/${segments[2]}` }); // Fallback to ID
+        
+        if (segments.length > 2) { // Check if there's a subPageId
+          const subPageId = segments[2];
+          const subPage = getSubPageById(community.id, subPageId);
+          if (subPage) {
+            // This adds the subPage name.
+            // e.g., breadcrumbs is now [{Communities}, {Local Run Club}, {Chat}]
+            breadcrumbs.push({ name: subPage.name, href: `/communities/${community.id}/${subPage.id}` });
+          } else {
+            // Fallback for subPageId if not found (e.g. direct navigation to non-existent subpage)
+            // breadcrumbs becomes [{Communities}, {Local Run Club}, {nonExistentSubPageId}]
+            breadcrumbs.push({ name: subPageId, href: `/communities/${community.id}/${subPageId}` });
+          }
         }
+      } else {
+        // Fallback for communityId if community itself not found 
+        // (e.g. direct navigation to /communities/non-existent-community-id)
+        // breadcrumbs becomes [{Communities}, {nonExistentCommunityId}]
+        breadcrumbs.push({ name: communityId, href: `/communities/${communityId}` });
       }
     }
+    // Add more specific nested route logic here if needed, e.g. /settings/account, /profile/edit etc.
+
     return breadcrumbs;
   };
   
   const breadcrumbItems = generateBreadcrumbs(pathname);
-  const currentPrimaryPage = breadcrumbItems[0] || { name: "ConnectMe", href: "/dashboard", icon: <Terminal className="h-5 w-5" />};
 
 
   if (loading || !mounted) {
@@ -144,19 +175,20 @@ export default function AppLayout({ children }: AppLayoutProps) {
           
           <div className="flex items-center gap-1 overflow-hidden text-ellipsis whitespace-nowrap">
             {breadcrumbItems.map((item, index) => (
-              <React.Fragment key={item.href}>
+              <React.Fragment key={item.href + '-' + index}> {/* Added index to key for safety */}
                 {index > 0 && <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />}
                 <Link href={item.href} className="flex items-center gap-1 hover:underline flex-shrink-0" title={item.name}>
+                  {/* Show icon ONLY for the first breadcrumb item (the primary page section like Dashboard, Communities, Settings) */}
                   {index === 0 && item.icon && React.cloneElement(item.icon, { className: "h-5 w-5 text-foreground"})}
-                  <span className={`text-foreground ${index > 0 ? 'truncate max-w-[100px] sm:max-w-[150px]' : ''}`}>{item.name}</span>
+                  <span className={`text-foreground ${index > 0 ? 'truncate max-w-[100px] sm:max-w-[150px] md:max-w-[200px]' : 'font-medium'}`}>{item.name}</span>
                 </Link>
               </React.Fragment>
             ))}
-            {breadcrumbItems.length === 0 && ( // Fallback if no breadcrumbs generated
-              <>
-                {React.cloneElement(currentPrimaryPage.icon!, { className: "h-5 w-5 text-foreground"})}
-                <span className="text-foreground">{currentPrimaryPage.name}</span>
-              </>
+            {breadcrumbItems.length === 0 && (
+                 <div className="flex items-center gap-1">
+                    <Terminal className="h-5 w-5 text-foreground"/>
+                    <span className="text-foreground font-medium">ConnectMe</span>
+                </div>
             )}
           </div>
         </div>
@@ -248,3 +280,4 @@ export default function AppLayout({ children }: AppLayoutProps) {
     </div>
   );
 }
+

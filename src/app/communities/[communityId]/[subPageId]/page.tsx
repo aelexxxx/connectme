@@ -72,9 +72,12 @@ export default function CommunitySubPage({ params }: { params: { communityId: st
           <PageIcon className="h-6 w-6 text-primary" />
           {subPage.name}
         </CardTitle>
+        {/* Removed CardDescription to simplify header as per request */}
+        {/* 
         <CardDescription>
           Welcome to the {subPage.name} section of the {community.name} community.
         </CardDescription>
+        */}
       </CardHeader>
       <CardContent className="prose dark:prose-invert max-w-none">
         {renderSubPageContent()}
@@ -82,3 +85,4 @@ export default function CommunitySubPage({ params }: { params: { communityId: st
     </Card>
   );
 }
+
