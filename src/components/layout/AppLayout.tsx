@@ -23,11 +23,21 @@ interface AppLayoutProps {
   children: ReactNode;
 }
 
-interface BreadcrumbItem {
+interface LinkBreadcrumbItem {
+  type?: 'link';
   name: string;
   href: string;
   icon?: JSX.Element;
 }
+
+interface TabSelectorBreadcrumbItem {
+  type: 'tabSelector';
+  activeTabName: string;
+  activeTabIcon: JSX.Element;
+}
+
+type BreadcrumbItem = LinkBreadcrumbItem | TabSelectorBreadcrumbItem;
+
 
 const staticPageDetails: { [key: string]: { name: string; icon: JSX.Element; href: string} } = {
   '/dashboard': { name: 'Dashboard', icon: <Home className="h-5 w-5" />, href: '/dashboard' },
@@ -45,7 +55,7 @@ const communityPageTabsDetails: { [key: string]: { name: string; icon: JSX.Eleme
 
 export default function AppLayout({ children }: AppLayoutProps) {
   const { user, logout, isGuest, loading } = useAuth();
-  const { settings, updateUserSettings } = useAuthSettings();
+  const { settings } = useAuthSettings(); // Removed updateUserSettings as toggle button is gone
   const layoutMode = settings.layoutMode || 'stacked';
   const router = useRouter();
   const pathname = usePathname();
@@ -75,66 +85,53 @@ export default function AppLayout({ children }: AppLayoutProps) {
     const pathSegments = pathname.split('/').filter(Boolean);
     const breadcrumbs: BreadcrumbItem[] = [];
 
-    if (pathname === '/') { // Should redirect to /dashboard, but handle just in case
+    if (pathname === '/') {
       if (staticPageDetails['/dashboard']) {
-         breadcrumbs.push({ ...staticPageDetails['/dashboard'] });
+         breadcrumbs.push({ ...staticPageDetails['/dashboard'], type: 'link' });
       }
       return breadcrumbs;
     }
     
-    // Handle top-level static pages
     const firstSegmentKey = `/${pathSegments[0]}`;
     if (staticPageDetails[firstSegmentKey]) {
-      breadcrumbs.push({ ...staticPageDetails[firstSegmentKey] });
+      breadcrumbs.push({ ...staticPageDetails[firstSegmentKey], type: 'link' });
     } else if (pathSegments.length > 0) {
-      // Fallback for unknown top-level segments (e.g. if a new page is added without static details)
       breadcrumbs.push({ 
         name: pathSegments[0].charAt(0).toUpperCase() + pathSegments[0].slice(1), 
         href: firstSegmentKey, 
-        icon: <Package className="h-5 w-5" /> 
+        icon: <Package className="h-5 w-5" />,
+        type: 'link'
       });
     }
 
-    // Handle /communities page with tabs
-    if (pathname === '/communities') {
-      const currentTab = searchParams.get('tab') || 'your-communities'; // Default to 'your-communities'
-      if (communityPageTabsDetails[currentTab]) {
+    if (pathSegments[0] === 'communities') {
+      if (pathSegments.length === 1) { // This means we are on /communities page
+        const currentTab = searchParams.get('tab') || 'your-communities';
+        const tabDetail = communityPageTabsDetails[currentTab] || communityPageTabsDetails['your-communities'];
         breadcrumbs.push({
-          name: communityPageTabsDetails[currentTab].name,
-          href: `/communities?tab=${communityPageTabsDetails[currentTab].hrefPart}`,
-          icon: communityPageTabsDetails[currentTab].icon, // Use tab-specific icon
+            type: 'tabSelector',
+            activeTabName: tabDetail.name,
+            activeTabIcon: tabDetail.icon,
         });
-      } else {
-         // Fallback if tab param is invalid
-         breadcrumbs.push({
-          name: communityPageTabsDetails['your-communities'].name,
-          href: `/communities?tab=${communityPageTabsDetails['your-communities'].hrefPart}`,
-          icon: communityPageTabsDetails['your-communities'].icon,
-        });
-      }
-    }
-    // Handle specific community and sub-pages
-    else if (pathSegments[0] === 'communities' && pathSegments.length > 1) {
-      const communityId = pathSegments[1];
-      const community = getCommunityById(communityId);
-      
-      if (community) {
-        // The first breadcrumb is "Communities", add community name
-        breadcrumbs.push({ name: community.name, href: `/communities/${community.id}` });
+      } else if (pathSegments.length > 1) { // This means we are on /communities/[communityId] or deeper
+        const communityId = pathSegments[1];
+        const community = getCommunityById(communityId);
         
-        if (pathSegments.length > 2) { 
-          const subPageId = pathSegments[2];
-          const subPage = getSubPageById(community.id, subPageId);
-          if (subPage) {
-            breadcrumbs.push({ name: subPage.name, href: `/communities/${community.id}/${subPage.id}` });
-          } else {
-            // Fallback for unknown sub-page
-            breadcrumbs.push({ name: subPageId.charAt(0).toUpperCase() + subPageId.slice(1), href: `/communities/${community.id}/${subPageId}` });
+        if (community) {
+          breadcrumbs.push({ name: community.name, href: `/communities/${community.id}`, type: 'link' });
+          
+          if (pathSegments.length > 2) { 
+            const subPageId = pathSegments[2];
+            const subPage = getSubPageById(community.id, subPageId);
+            if (subPage) {
+              breadcrumbs.push({ name: subPage.name, href: `/communities/${community.id}/${subPage.id}`, type: 'link' });
+            } else {
+              breadcrumbs.push({ name: subPageId.charAt(0).toUpperCase() + subPageId.slice(1), href: `/communities/${community.id}/${subPageId}`, type: 'link' });
+            }
           }
+        } else {
+          breadcrumbs.push({ name: communityId.charAt(0).toUpperCase() + communityId.slice(1), href: `/communities/${communityId}`, type: 'link' });
         }
-      } else if (pathSegments.length > 1 && pathSegments[0] === 'communities'){
-        // Fallback for unknown community
-        breadcrumbs.push({ name: communityId.charAt(0).toUpperCase() + communityId.slice(1), href: `/communities/${communityId}` });
       }
     }
     return breadcrumbs;
@@ -152,8 +149,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
     );
   }
 
-  // Determine if page-specific tabs should override main horizontal tabs
-  const hasPageSpecificTabs = pathname.startsWith('/communities');
+  const hasPageSpecificTabs = pathname.startsWith('/communities') && pathname.split('/').length > 2; // True for /communities/[id]/...
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
@@ -184,20 +180,52 @@ export default function AppLayout({ children }: AppLayoutProps) {
           </DropdownMenu>
           
           <div className="flex items-center gap-1 overflow-hidden text-ellipsis whitespace-nowrap">
-            {breadcrumbItems.map((item, index) => (
-              <React.Fragment key={item.href + '-' + index}>
-                {/* Chevron already present from dropdown trigger */}
-                {/* {index > 0 && <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />} */}
-                <Link href={item.href} className="flex items-center gap-1 hover:underline flex-shrink-0" title={item.name}>
-                  {item.icon && React.cloneElement(item.icon, { className: "h-5 w-5 text-foreground"})}
-                  <span className={`text-foreground ${index === breadcrumbItems.length -1 ? 'font-medium' : 'text-sm'} truncate max-w-[100px] sm:max-w-[150px] md:max-w-[200px]`}>{item.name}</span>
-                </Link>
-                {index < breadcrumbItems.length - 1 && <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />}
-              </React.Fragment>
-            ))}
-            {breadcrumbItems.length === 0 && pathname !== '/' && ( // Handle case where path is known but no breadcrumbs generated (e.g. root redirecting)
+            {breadcrumbItems.map((item, index) => {
+              const key = item.type === 'tabSelector' ? `breadcrumb-tab-selector-${index}` : `${(item as LinkBreadcrumbItem).href}-${index}`;
+              return (
+                <React.Fragment key={key}>
+                  {index > 0 && item.type !== 'tabSelector' && (
+                    <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                  )}
+
+                  {item.type === 'tabSelector' ? (
+                    <>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 flex-shrink-0">
+                            <ChevronRight className="h-5 w-5" />
+                            <span className="sr-only">Select community section</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          <DropdownMenuLabel>Community Sections</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          {Object.values(communityPageTabsDetails).map(tabDetail => (
+                            <DropdownMenuItem key={tabDetail.hrefPart} onClick={() => router.push(`/communities?tab=${tabDetail.hrefPart}`)} className="cursor-pointer">
+                              {React.cloneElement(tabDetail.icon, { className: "mr-2 h-4 w-4" })}
+                              <span>{tabDetail.name}</span>
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      {item.activeTabIcon && React.cloneElement(item.activeTabIcon, { className: "h-5 w-5 text-foreground" })}
+                      <span className="text-foreground font-medium truncate max-w-[100px] sm:max-w-[150px] md:max-w-[200px]" title={item.activeTabName}>
+                        {item.activeTabName}
+                      </span>
+                    </>
+                  ) : ( 
+                    <Link href={(item as LinkBreadcrumbItem).href} className="flex items-center gap-1 hover:underline flex-shrink-0" title={(item as LinkBreadcrumbItem).name}>
+                      {(item as LinkBreadcrumbItem).icon && React.cloneElement((item as LinkBreadcrumbItem).icon!, { className: "h-5 w-5 text-foreground" })}
+                      <span className={`text-foreground ${index === breadcrumbItems.length - 1 ? 'font-medium' : 'text-sm'} truncate max-w-[100px] sm:max-w-[150px] md:max-w-[200px]`}>
+                        {(item as LinkBreadcrumbItem).name}
+                      </span>
+                    </Link>
+                  )}
+                </React.Fragment>
+              );
+            })}
+            {breadcrumbItems.length === 0 && pathname !== '/' && ( 
                  <div className="flex items-center gap-1">
-                    {/* <Package className="h-5 w-5 text-foreground"/> */}
                     <span className="text-foreground font-medium">{pathname.split('/').filter(Boolean).pop()?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Page'}</span>
                 </div>
             )}
@@ -205,16 +233,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </div>
         
         <div className="flex items-center gap-2">
-           <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => updateUserSettings({ layoutMode: layoutMode === 'stacked' ? 'horizontal' : 'stacked' })}
-              title={`Switch to ${layoutMode === 'stacked' ? 'Horizontal Tabs View' : 'Stacked View'}`}
-              className="h-9 w-9"
-            >
-              {layoutMode === 'stacked' ? <Columns className="h-5 w-5" /> : <Rows className="h-5 w-5" />}
-              <span className="sr-only">Toggle Layout Mode</span>
-            </Button>
+          {/* Layout toggle button removed */}
           {user || isGuest ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -274,7 +293,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       </header>
       
       {layoutMode === 'horizontal' && !hasPageSpecificTabs && (
-        <Tabs value={pathname} className="sticky top-16 z-20 w-full border-b bg-background/90 backdrop-blur-sm">
+        <Tabs value={pathname.startsWith('/communities') ? '/communities' : pathname} className="sticky top-16 z-20 w-full border-b bg-background/90 backdrop-blur-sm">
           <TabsList className="grid w-full grid-cols-5 h-auto">
             {Object.values(staticPageDetails).map(page => (
               <TabsTrigger key={page.href} value={page.href} asChild className="flex-shrink-0 data-[state=active]:shadow-lg data-[state=active]:bg-card">
@@ -297,7 +316,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
         © {new Date().getFullYear()} ConnectMe. All rights reserved.
       </footer>
 
-      {/* Show mobile nav only in stacked mode OR if guest in horizontal OR if page has specific tabs (to avoid double tab bars) */}
       {(layoutMode === 'stacked' || (layoutMode === 'horizontal' && (isGuest || hasPageSpecificTabs ))) && (
         <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card p-1 shadow-[0_-2px_5px_-1px_rgba(0,0,0,0.1)] md:hidden">
           <div className="grid grid-cols-4 gap-1">
@@ -319,4 +337,3 @@ export default function AppLayout({ children }: AppLayoutProps) {
     </div>
   );
 }
-
