@@ -46,7 +46,7 @@ export default function QrCodeDisplay({ profileUrl }: QrCodeDisplayProps) {
 
 
   return (
-    <Card className="w-full max-w-sm shadow-lg">
+    <Card className="w-full shadow-lg">
       <CardHeader>
         <CardTitle className="text-xl text-center">Share Your Profile</CardTitle>
         <CardDescription className="text-center">Let others connect with you easily.</CardDescription>
@@ -78,3 +78,4 @@ export default function QrCodeDisplay({ profileUrl }: QrCodeDisplayProps) {
     </Card>
   );
 }
+
