@@ -90,6 +90,7 @@ export default function ProfilePage() {
 
   return (
     <AppLayout>
+      {/* Page title and description are now handled by AppLayout header */}
       <div className="space-y-8">
         {/* Profile Header Card */}
         <Card className="overflow-hidden shadow-xl">
@@ -101,7 +102,7 @@ export default function ProfilePage() {
                 <AvatarFallback className="text-4xl">{user.name?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
               </Avatar>
               <div className="flex-1 pt-4 md:pt-0 text-center md:text-left">
-                <h1 className="text-3xl font-bold text-foreground">{user.name}</h1>
+                <h2 className="text-3xl font-bold text-foreground">{user.name}</h2>
                 {user.email && <p className="text-sm text-muted-foreground">{user.email}</p>}
                 {user.status && <p className="text-md text-accent mt-1 italic">"{user.status}"</p>}
               </div>

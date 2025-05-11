@@ -10,12 +10,8 @@ export default function ConnectionsPage() {
   const { isGuest } = useAuth();
   return (
     <AppLayout>
+      {/* Page title and description are now handled by AppLayout header */}
       <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Discover Connections</h1>
-          <p className="text-muted-foreground">Expand your network and find interesting people to connect with.</p>
-        </div>
-
         {isGuest && (
            <Card className="bg-primary/10 border-primary/30">
             <CardHeader>

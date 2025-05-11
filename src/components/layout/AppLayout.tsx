@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { Home, User, Users, LogOut, Settings, Terminal, UserCircle, ShieldQuestion } from 'lucide-react';
+import { Home, User, Users, LogOut, Settings, Terminal, UserCircle, ChevronRight, Settings2, UserCog } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -20,6 +20,14 @@ import { useState, useEffect } from 'react';
 interface AppLayoutProps {
   children: ReactNode;
 }
+
+const pageDetails: { [key: string]: { name: string; icon: JSX.Element } } = {
+  '/dashboard': { name: 'Dashboard', icon: <Home className="h-5 w-5" /> },
+  '/profile': { name: 'Profile', icon: <UserCircle className="h-5 w-5" /> },
+  '/connections': { name: 'Connections', icon: <Users className="h-5 w-5" /> },
+  '/settings': { name: 'Settings', icon: <UserCog className="h-5 w-5" /> },
+};
+
 
 export default function AppLayout({ children }: AppLayoutProps) {
   const { user, logout, isGuest, loading } = useAuth();
@@ -38,6 +46,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
     { href: '/profile', label: 'Profile', icon: <User className="h-5 w-5" /> },
     { href: '/connections', label: 'Connections', icon: <Users className="h-5 w-5" /> },
   ];
+  
+  const currentPage = pageDetails[pathname] || { name: 'Page', icon: <Terminal className="h-5 w-5" /> };
+
 
   if (loading || !mounted) {
     return (
@@ -53,11 +64,18 @@ export default function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-card px-4 sm:px-6 shadow-sm">
-        <Link href="/dashboard" className="flex items-center gap-2 text-lg font-semibold text-primary">
-          <Terminal className="h-6 w-6" />
-          <span>ConnectMe</span>
-        </Link>
+        <div className="flex items-center gap-2 text-lg font-semibold">
+          <Link href="/dashboard" className="flex items-center gap-2 text-primary">
+            <Terminal className="h-6 w-6" />
+            <span>ConnectMe</span>
+          </Link>
+          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          {React.cloneElement(currentPage.icon, { className: "h-5 w-5 text-foreground"})}
+          <span className="text-foreground">{currentPage.name}</span>
+        </div>
         
+        {/* Desktop navigation is removed as per new design, breadcrumb serves as main nav */}
+        {/* 
         <nav className="hidden items-center gap-5 text-sm font-medium md:flex">
           {navItems.map((item) => (
             <Link
@@ -71,6 +89,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             </Link>
           ))}
         </nav>
+        */}
 
         <div className="flex items-center gap-4">
           {user || isGuest ? (
@@ -149,7 +168,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       </nav>
 
       <main className="flex-1 p-4 sm:p-6 md:p-8 pb-20 md:pb-8">
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-6xl space-y-6">
          {children}
         </div>
       </main>

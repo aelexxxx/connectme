@@ -17,11 +17,9 @@ export default function DashboardPage() {
   return (
     <AppLayout>
       <div className="space-y-8">
+        {/* Page title and description are now handled by AppLayout header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">Welcome back, {userName}!</h1>
-            <p className="text-muted-foreground">Here's what's new in your network.</p>
-          </div>
+          <p className="text-xl text-foreground">Welcome back, {userName}!</p>
           {!isGuest && (
             <Button onClick={() => router.push('/connections')} className="bg-accent hover:bg-accent/90 text-accent-foreground">
               <UserPlus className="mr-2 h-4 w-4" />

@@ -1,3 +1,4 @@
+
 "use client";
 
 import AppLayout from "@/components/layout/AppLayout";
@@ -9,10 +10,10 @@ import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useAuthSettings } from "@/contexts/AuthContext";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Sun, Moon, Laptop, Bell, Lock, Trash2, Palette, ShieldAlert, UserCog, Layers, Wand2, Sparkles } from "lucide-react";
+import { Sun, Moon, Laptop, Bell, Lock, Trash2, Palette, ShieldAlert, Layers, Wand2, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input"; // Added for color input
+import { Input } from "@/components/ui/input"; 
 
 export default function SettingsPage() {
   const { settings, updateUserSettings, isGuest, user, deleteAccount } = useAuthSettings();
@@ -68,19 +69,9 @@ export default function SettingsPage() {
 
   return (
     <AppLayout>
-      <div className="space-y-10">
-        <header>
-          <h1 className="text-4xl font-bold tracking-tight text-foreground flex items-center">
-            <UserCog className="mr-3 h-10 w-10 text-primary" />
-            Settings
-          </h1>
-          <p className="text-lg text-muted-foreground mt-1">
-            Manage your account preferences and settings.
-          </p>
-        </header>
-
-        <Separator />
-
+      {/* Page title and description are now handled by AppLayout header */}
+      {/* Main content is wrapped in Cards */}
+      <div className="space-y-8">
         {/* Appearance Settings */}
         <Card className="shadow-lg">
           <CardHeader>
