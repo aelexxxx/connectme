@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'; // Import ReactNode
 import { useEffect } from 'react';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
-import { AuthProvider, useAuth, DEFAULT_USER_SETTINGS } from '@/contexts/AuthContext';
+import { AuthProvider, useAuth, useAuthSettings } from '@/contexts/AuthContext'; // Import useAuthSettings
 import { Toaster } from "@/components/ui/toaster";
 
 const geistSans = Geist({
@@ -17,44 +17,44 @@ const geistMono = Geist_Mono({
 });
 
 function ThemeApplicator({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth();
+  const { settings, loading } = useAuthSettings(); // Use useAuthSettings to get settings with defaults
 
   useEffect(() => {
     if (loading) return;
 
     const root = window.document.documentElement;
-    const currentColorScheme = user?.settings?.theme || DEFAULT_USER_SETTINGS.theme;
-    const currentThemeStyle = user?.settings?.themeStyle || DEFAULT_USER_SETTINGS.themeStyle;
-    const glassmorphismOptions = user?.settings?.glassmorphismOptions || DEFAULT_USER_SETTINGS.glassmorphismOptions;
+    
+    const currentColorScheme = settings.theme;
+    const currentThemeStyle = settings.themeStyle;
+    const glassmorphismOptions = settings.glassmorphismOptions;
 
     // Apply color scheme (light/dark/system)
     root.classList.remove('light', 'dark');
+    let activeColorScheme = currentColorScheme;
     if (currentColorScheme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      root.classList.add(systemTheme);
-    } else {
-      root.classList.add(currentColorScheme);
+      activeColorScheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }
+    root.classList.add(activeColorScheme);
 
     // Apply theme style (default/glassmorphism)
     if (currentThemeStyle === 'glassmorphism') {
       root.classList.add('theme-glassmorphism');
       
-      // Apply dynamic CSS variables for glassmorphism
-      root.style.setProperty('--dynamic-glass-color-one', glassmorphismOptions?.gradientColor1 || (root.classList.contains('dark') ? 'hsl(var(--glass-color-one-dark))' : 'hsl(var(--glass-color-one-light))'));
-      root.style.setProperty('--dynamic-glass-color-two', glassmorphismOptions?.gradientColor2 || (root.classList.contains('dark') ? 'hsl(var(--glass-color-two-dark))' : 'hsl(var(--glass-color-two-light))'));
-      root.style.setProperty('--dynamic-glass-blur', `${glassmorphismOptions?.blurIntensity || 10}px`);
+      // Determine default glass colors based on active color scheme
+      const defaultGlassColorOne = activeColorScheme === 'dark' ? 'hsl(var(--glass-color-one-dark))' : 'hsl(var(--glass-color-one-light))';
+      const defaultGlassColorTwo = activeColorScheme === 'dark' ? 'hsl(var(--glass-color-two-dark))' : 'hsl(var(--glass-color-two-light))';
+      const defaultGlassBorderColor = activeColorScheme === 'dark' ? 'hsl(var(--glass-border-color-dark))' : 'hsl(var(--glass-border-color-light))';
+      const defaultGlassShadow = activeColorScheme === 'dark' ? 'var(--glass-shadow-dark)' : 'var(--glass-shadow-light)';
+      const defaultGlassTextColor = activeColorScheme === 'dark' ? 'var(--glass-text-color-dark)' : 'var(--glass-text-color-light)';
+      const defaultBlurIntensity = activeColorScheme === 'dark' ? 'var(--glass-blur-intensity-dark)' : 'var(--glass-blur-intensity-light)';
+
+      root.style.setProperty('--dynamic-glass-color-one', glassmorphismOptions?.gradientColor1 || defaultGlassColorOne);
+      root.style.setProperty('--dynamic-glass-color-two', glassmorphismOptions?.gradientColor2 || defaultGlassColorTwo);
+      root.style.setProperty('--dynamic-glass-blur', `${glassmorphismOptions?.blurIntensity || parseFloat(getComputedStyle(root).getPropertyValue(activeColorScheme === 'dark' ? '--glass-blur-intensity-dark' : '--glass-blur-intensity-light').replace('px',''))}px`);
       
-      // Border and shadow also depend on light/dark mode if not overridden by specific options
-      if (root.classList.contains('dark')) {
-        root.style.setProperty('--dynamic-glass-border-color', 'hsl(var(--glass-border-color-dark))');
-        root.style.setProperty('--dynamic-glass-shadow', 'var(--glass-shadow-dark)');
-        root.style.setProperty('--dynamic-glass-text-color', 'var(--glass-text-color-dark)');
-      } else {
-        root.style.setProperty('--dynamic-glass-border-color', 'hsl(var(--glass-border-color-light))');
-        root.style.setProperty('--dynamic-glass-shadow', 'var(--glass-shadow-light)');
-        root.style.setProperty('--dynamic-glass-text-color', 'var(--glass-text-color-light)');
-      }
+      root.style.setProperty('--dynamic-glass-border-color', defaultGlassBorderColor); // Use theme defaults for border
+      root.style.setProperty('--dynamic-glass-shadow', defaultGlassShadow); // Use theme defaults for shadow
+      root.style.setProperty('--dynamic-glass-text-color', defaultGlassTextColor); // Use theme defaults for text
 
       if (glassmorphismOptions?.animatedGradient) {
         root.classList.add('animate-gradient');
@@ -72,7 +72,7 @@ function ThemeApplicator({ children }: { children: ReactNode }) {
       root.style.removeProperty('--dynamic-glass-text-color');
     }
 
-  }, [user, loading]);
+  }, [settings, loading]);
 
   return <>{children}</>;
 }
@@ -100,3 +100,4 @@ export default function RootLayout({
     </html>
   );
 }
+

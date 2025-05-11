@@ -76,10 +76,10 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   theme: 'system',
   themeStyle: 'default',
   glassmorphismOptions: {
-    gradientColor1: '#60a5fa', // Default light blue (rgb(96, 165, 250))
-    gradientColor2: '#c084fc', // Default light purple (rgb(192, 132, 252))
+    // gradientColor1: undefined, // Let CSS defaults take precedence for initial look
+    // gradientColor2: undefined, // Let CSS defaults take precedence for initial look
     animatedGradient: false,
-    blurIntensity: 10,
+    blurIntensity: 12, // Default blur intensity
   },
   notifications: {
     newConnectionEmail: true,
@@ -108,7 +108,7 @@ const MOCK_USER_BASE: Omit<User, 'id' | 'email' | 'name'> = {
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isGuest, setIsGuest] = useState(false);
+  const [isGuest, setIsGuest] = useState(false); // Initialize to false, useEffect will update
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
@@ -150,7 +150,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
-  const login = (email: string, name?: string) => {
+  const login = (email: string, name?:string) => {
     const baseName = name || email.split('@')[0];
     const newUser: User = { 
       ...MOCK_USER_BASE, 
@@ -336,24 +336,36 @@ export const useAuth = () => {
   }
   return context;
 };
+
 export const useAuthSettings = () => {
   const context = useAuth();
-  // Ensure glassmorphismOptions are defaulted if not present
-  const currentSettings = context.user?.settings || DEFAULT_USER_SETTINGS;
-  const glassmorphismOptions = {
-    ...DEFAULT_USER_SETTINGS.glassmorphismOptions,
-    ...currentSettings.glassmorphismOptions,
+  // Ensure settings structure is complete by merging with defaults
+  const baseSettings = context.user?.settings || DEFAULT_USER_SETTINGS;
+  
+  const fullyPopulatedSettings: UserSettings = {
+    theme: baseSettings.theme || DEFAULT_USER_SETTINGS.theme,
+    themeStyle: baseSettings.themeStyle || DEFAULT_USER_SETTINGS.themeStyle,
+    glassmorphismOptions: {
+      ...DEFAULT_USER_SETTINGS.glassmorphismOptions,
+      ...baseSettings.glassmorphismOptions,
+    },
+    notifications: {
+      ...DEFAULT_USER_SETTINGS.notifications,
+      ...baseSettings.notifications,
+    },
+    privacy: {
+      ...DEFAULT_USER_SETTINGS.privacy,
+      ...baseSettings.privacy,
+    },
   };
   
   return { 
-    settings: {
-      ...currentSettings,
-      glassmorphismOptions,
-    },
+    settings: fullyPopulatedSettings,
     updateUserSettings: context.updateUserSettings,
     isGuest: context.isGuest,
     user: context.user,
     deleteAccount: context.deleteAccount,
+    loading: context.loading,
   };
 };
 

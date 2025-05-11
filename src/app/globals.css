@@ -55,17 +55,17 @@ body {
     --chart-5: 27 87% 67%;
 
     /* Glassmorphism Defaults - Light Mode */
-    --glass-color-one-light: 210 100% 88%; /* Light Blue */
-    --glass-color-two-light: 280 100% 92%; /* Light Purple */
-    --glass-border-color-light: 220 60% 95% / 0.5;
-    --glass-shadow-light: 0 8px 32px 0 rgba(31, 38, 135, 0.2); /* Softer shadow */
-    --glass-blur-intensity: 10px;
-    --glass-text-color-light: var(--foreground);
+    --glass-color-one-light: 220 80% 95% / 0.4; /* Light, translucent frosty blue */
+    --glass-color-two-light: 210 70% 97% / 0.35; /* Lighter, translucent frosty white-blue */
+    --glass-border-color-light: 220 30% 70% / 0.5; /* Light border */
+    --glass-shadow-light: 0 6px 24px 0 rgba(0, 0, 0, 0.1); /* Softer shadow for light */
+    --glass-text-color-light: hsl(240 10% 3.9%);
+    --glass-blur-intensity-light: 10px; /* Default blur for light */
 
     /* Dynamic vars to be set by JS, defaulting to light mode glass vars */
     --dynamic-glass-color-one: hsl(var(--glass-color-one-light));
     --dynamic-glass-color-two: hsl(var(--glass-color-two-light));
-    --dynamic-glass-blur: var(--glass-blur-intensity);
+    --dynamic-glass-blur: var(--glass-blur-intensity-light);
     --dynamic-glass-border-color: hsl(var(--glass-border-color-light));
     --dynamic-glass-shadow: var(--glass-shadow-light);
     --dynamic-glass-text-color: var(--glass-text-color-light);
@@ -118,42 +118,57 @@ body {
     --chart-5: 340 75% 55%;
 
     /* Glassmorphism Defaults - Dark Mode */
-    --glass-color-one-dark: 220 40% 15%; /* Darker Blue */
-    --glass-color-two-dark: 290 40% 20%; /* Darker Purple */
-    --glass-border-color-dark: 230 30% 30% / 0.6;
-    --glass-shadow-dark: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
-    /* Blur intensity can be the same or different for dark mode */
-    --glass-text-color-dark: var(--foreground); /* Use dark mode foreground */
+    --glass-color-one-dark: 245 30% 18% / 0.35; /* hsla(245, 30%, 18%, 0.35) */
+    --glass-color-two-dark: 235 35% 20% / 0.3;  /* hsla(235, 35%, 20%, 0.3) */
+    --glass-border-color-dark: 240 20% 50% / 0.25; /* Brighter, translucent border */
+    --glass-shadow-dark: 0 10px 40px 0 rgba(0, 0, 0, 0.55); /* Adjusted shadow */
+    --glass-text-color-dark: hsl(0 0% 95%);
+    --glass-blur-intensity-dark: 12px; /* Default blur for dark */
   }
 
   .theme-glassmorphism {
+    /* Main page background gradient for glassmorphism theme */
+    background-image: linear-gradient(145deg, hsl(220, 60%, 90%), hsl(200, 50%, 85%)); /* Light mode page background */
+    background-attachment: fixed;
+    background-size: cover;
+    
     /* Redefine component vars for glassmorphism */
     --card: transparent; 
     --popover: transparent;
-    /* Use var(--background) for the main page background, components will float on top */
     
     /* These are the properties that glass surfaces will use */
     --glass-surface-background-image: linear-gradient(135deg, var(--dynamic-glass-color-one), var(--dynamic-glass-color-two));
     --glass-surface-backdrop-filter: blur(var(--dynamic-glass-blur));
     --glass-surface-webkit-backdrop-filter: blur(var(--dynamic-glass-blur));
     --glass-surface-border: 1px solid var(--dynamic-glass-border-color);
-    --glass-surface-box-shadow: var(--dynamic-glass-shadow);
+    --glass-surface-box-shadow: var(--glass-shadow-light);
     --glass-surface-border-radius: var(--radius);
     --glass-surface-text-color: var(--dynamic-glass-text-color);
 
-    /* Override text colors on glass if needed, but usually --foreground is fine */
     --card-foreground: var(--dynamic-glass-text-color);
     --popover-foreground: var(--dynamic-glass-text-color);
-    /* --muted-foreground might need adjustment if it's too faint on glass */
     --muted-foreground: color-mix(in srgb, var(--dynamic-glass-text-color) 60%, transparent);
   }
   
   .theme-glassmorphism.dark {
+      /* Dark mode page background gradient */
+      background-image: linear-gradient(145deg, hsl(260, 50%, 10%), hsl(230, 40%, 15%));
+      
       --dynamic-glass-color-one: hsl(var(--glass-color-one-dark));
       --dynamic-glass-color-two: hsl(var(--glass-color-two-dark));
       --dynamic-glass-border-color: hsl(var(--glass-border-color-dark));
       --dynamic-glass-shadow: var(--glass-shadow-dark);
       --dynamic-glass-text-color: var(--glass-text-color-dark);
+      --dynamic-glass-blur: var(--glass-blur-intensity-dark);
+  }
+
+  .theme-glassmorphism:not(.dark) {
+      --dynamic-glass-color-one: hsl(var(--glass-color-one-light));
+      --dynamic-glass-color-two: hsl(var(--glass-color-two-light));
+      --dynamic-glass-border-color: hsl(var(--glass-border-color-light));
+      --dynamic-glass-shadow: var(--glass-shadow-light);
+      --dynamic-glass-text-color: var(--glass-text-color-light);
+      --dynamic-glass-blur: var(--glass-blur-intensity-light);
   }
 
   @keyframes flowing-gradient {
@@ -161,12 +176,25 @@ body {
     50% { background-position: 100% 100%; }
     100% { background-position: 0% 0%; }
   }
-
-  .theme-glassmorphism.animate-gradient {
-    --glass-animation: flowing-gradient 20s linear infinite;
-    --glass-background-size: 300% 300%; /* Needs to be larger for animation */
-  }
 }
+
+/* Define glass effect properties outside of layers or in @layer utilities */
+.apply-glass-effect {
+  background-image: var(--glass-surface-background-image) !important;
+  background-color: transparent !important; /* Override explicit bg-card etc. */
+  backdrop-filter: var(--glass-surface-backdrop-filter) !important;
+  -webkit-backdrop-filter: var(--glass-surface-webkit-backdrop-filter) !important;
+  border: var(--glass-surface-border) !important;
+  box-shadow: var(--glass-surface-box-shadow) !important;
+  border-radius: var(--glass-surface-border-radius) !important;
+  color: var(--glass-surface-text-color) !important;
+}
+
+.apply-glass-animation {
+  animation: flowing-gradient 20s linear infinite;
+  background-size: 300% 300% !important; /* Needs to be larger for animation */
+}
+
 
 @layer base {
   * {
@@ -175,112 +203,123 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+  /* Ensure body also gets the gradient when theme is active */
+  .theme-glassmorphism body {
+     background-image: inherit; /* Inherit from html element */
+     background-attachment: inherit;
+     background-size: inherit;
+  }
 }
+
 
 /* Apply glass effect to specific components */
 @layer components {
-  /* Define .glass-surface-styles here, so it's a standalone component class */
-  .glass-surface-styles {
-    background-image: var(--glass-surface-background-image) !important;
-    background-color: transparent !important; /* Override explicit bg-card etc. */
-    backdrop-filter: var(--glass-surface-backdrop-filter) !important;
-    -webkit-backdrop-filter: var(--glass-surface-webkit-backdrop-filter) !important;
-    border: var(--glass-surface-border) !important;
-    box-shadow: var(--glass-surface-box-shadow) !important;
-    border-radius: var(--glass-surface-border-radius) !important;
-    color: var(--glass-surface-text-color) !important;
-    animation: var(--glass-animation);
-    background-size: var(--glass-background-size, cover);
-  }
-
   .theme-glassmorphism {
-    /* Now apply it to specific selectors when theme-glassmorphism is active */
-
     /* Card: Targets the div from Card component in ui/card.tsx */
     .rounded-lg.border.bg-card.text-card-foreground.shadow-sm {
-      @apply glass-surface-styles;
+      @apply apply-glass-effect;
     }
 
-    /* PopoverContent: Targets content part of Popover */
-    [data-radix-popper-content-wrapper] > .z-50.w-72.rounded-md.border.bg-popover.p-4.text-popover-foreground.shadow-md {
-      @apply glass-surface-styles;
-    }
-    /* Fallback selector if the above is too specific or changes */
-    .bg-popover[role="dialog"], .bg-popover[data-state="open"] {
-        &:not(:where(.dummy-selector-to-lower-specificity)) { /* Scoping to avoid over-applying */
-             @apply glass-surface-styles;
+    /* PopoverContent: Targets content part of Popover and fallbacks */
+    [data-radix-popper-content-wrapper] > .z-50.w-72.rounded-md.border.bg-popover.p-4.text-popover-foreground.shadow-md,
+    .bg-popover[role="dialog"], .bg-popover[data-state="open"],
+    .bg-popover.text-popover-foreground.shadow-md { /* Covers dropdowns/selects that might use these classes */
+        &:not(:where(.dummy-selector-to-lower-specificity)) { /* Scoping to avoid over-applying to non-target popovers */
+             @apply apply-glass-effect;
         }
     }
 
-
-    /* DialogContent: Targets content part of Dialog */
-    .fixed.left-\[50\%\].top-\[50\%\].z-50.grid.w-full.max-w-lg.translate-x-\[-50\%\].translate-y-\[-50\%\].gap-4.border.bg-background.p-6.shadow-lg.sm\:rounded-lg[role="dialog"] {
-       @apply glass-surface-styles;
-       /* Dialogs use --background, so we ensure its text is readable */
-       color: var(--glass-surface-text-color) !important;
-    }
-     /* Fallback selector for DialogContent */
+    /* DialogContent: Targets content part of Dialog and fallbacks */
+    /* Specific selector for default DialogContent style */
+    .fixed.left-\[50\%\].top-\[50\%\].z-50.grid.w-full.max-w-lg.translate-x-\[-50\%\].translate-y-\[-50\%\].gap-4.border.bg-background.p-6.shadow-lg.sm\:rounded-lg[role="dialog"],
+    /* General fallback for Dialogs/AlertDialogs using bg-background */
     .bg-background[role="alertdialog"], .bg-background[role="dialog"] {
-       &:not(:where(.dummy-selector-to-lower-specificity)) {
-            @apply glass-surface-styles;
+       &:not(:where(.dummy-selector-to-lower-specificity)) { /* Scoping */
+            @apply apply-glass-effect;
        }
     }
 
-
     /* SheetContent: Targets content part of Sheet */
-    /* The sheet has variants (left, right, top, bottom), so we target the common part */
+    /* Specific selector for default SheetContent style */
     .fixed.z-50.gap-4.bg-background.p-6.shadow-lg {
-      @apply glass-surface-styles;
-      color: var(--glass-surface-text-color) !important;
+      @apply apply-glass-effect;
     }
     
     /* App Header (from AppLayout - sticky top-0 ... bg-card ) */
     header.sticky.bg-card {
-      @apply glass-surface-styles;
+      @apply apply-glass-effect;
       border-radius: 0 !important; /* Headers typically aren't rounded */
-      /* Original has border-b, glass-surface-border will handle it */
     }
 
     /* App Footer (from AppLayout - py-4 ... border-t) */
-    footer.border-t { /* Footer might not have bg-card by default */
-      @apply glass-surface-styles;
+    footer.border-t { 
+      @apply apply-glass-effect;
       border-radius: 0 !important;
-      /* Original has border-t */
     }
     
     /* Mobile Nav Bar (from AppLayout - fixed bottom-0 ... bg-card) */
     nav.fixed.bottom-0.bg-card {
-        @apply glass-surface-styles;
+        @apply apply-glass-effect;
         border-radius: 0 !important;
-         /* Original has border-t */
+    }
+    
+    /* Radix UI specific data attributes if they bypass simple class selectors */
+    [data-radix-select-content],
+    [data-radix-dropdown-menu-content] {
+        @apply apply-glass-effect;
     }
 
     /* Adjust input fields on glassmorphism theme for better visibility */
-    .bg-input, input, textarea, .bg-background select {
+    input, textarea, select, .bg-input,
+    .bg-background input, .bg-background textarea, .bg-background select {
         background-color: color-mix(in srgb, var(--dynamic-glass-border-color) 20%, transparent) !important;
-        border-color: color-mix(in srgb, var(--dynamic-glass-border-color) 80%, transparent) !important;
+        border-color: color-mix(in srgb, var(--dynamic-glass-border-color) 70%, transparent) !important;
         color: var(--dynamic-glass-text-color) !important;
     }
      input::placeholder, textarea::placeholder {
-        color: color-mix(in srgb, var(--dynamic-glass-text-color) 70%, transparent) !important;
+        color: color-mix(in srgb, var(--dynamic-glass-text-color) 60%, transparent) !important;
+    }
+    
+    /* Primary button (bg-primary) uses CSS variables and should adapt well, but ensure text is readable */
+    .bg-primary {
+        color: var(--primary-foreground) !important; /* Ensure primary button text is always its foreground color */
+    }
+    .bg-accent {
+        color: var(--accent-foreground) !important;
     }
 
-    /* Buttons may need slight adjustments for contrast on glass */
-    /* Primary button (bg-primary) uses CSS variables and should adapt well */
-    
     /* Outline button specific overrides for glassmorphism */
-    /* Default Shadcn/ui outline button class: .border.border-input.bg-background.hover\:bg-accent.hover\:text-accent-foreground */
-    .border.border-input.bg-background.hover\:bg-accent.hover\:text-accent-foreground {
+    .border.border-input.bg-background.hover\:bg-accent.hover\:text-accent-foreground,
+    button[variant="outline"] {
         background-color: transparent !important;
         border-color: var(--dynamic-glass-text-color) !important;
         color: var(--dynamic-glass-text-color) !important;
     }
     /* Hover state for the outline button in glassmorphism */
-    .border.border-input.bg-background.hover\:bg-accent.hover\:text-accent-foreground:hover {
+    .border.border-input.bg-background.hover\:bg-accent.hover\:text-accent-foreground:hover,
+    button[variant="outline"]:hover {
         background-color: color-mix(in srgb, var(--dynamic-glass-text-color) 15%, transparent) !important;
-        color: var(--dynamic-glass-text-color) !important; /* Override hover:text-accent-foreground */
-        /* border-color can remain --dynamic-glass-text-color or be adjusted if needed */
+        border-color: var(--dynamic-glass-text-color) !important;
+        color: var(--dynamic-glass-text-color) !important; 
     }
+  }
 
+  /* Apply animation conditionally */
+  .theme-glassmorphism.animate-gradient {
+    /* Selectors that should have the animation when glass effect is active */
+    .rounded-lg.border.bg-card.text-card-foreground.shadow-sm,
+    [data-radix-popper-content-wrapper] > .z-50.w-72.rounded-md.border.bg-popover.p-4.text-popover-foreground.shadow-md,
+    .bg-popover[role="dialog"]:not(:where(.dummy-selector-to-lower-specificity)), .bg-popover[data-state="open"]:not(:where(.dummy-selector-to-lower-specificity)),
+    .bg-popover.text-popover-foreground.shadow-md:not(:where(.dummy-selector-to-lower-specificity)),
+    .fixed.left-\[50\%\].top-\[50\%\].z-50.grid.w-full.max-w-lg.translate-x-\[-50\%\].translate-y-\[-50\%\].gap-4.border.bg-background.p-6.shadow-lg.sm\:rounded-lg[role="dialog"],
+    .bg-background[role="alertdialog"]:not(:where(.dummy-selector-to-lower-specificity)), .bg-background[role="dialog"]:not(:where(.dummy-selector-to-lower-specificity)),
+    .fixed.z-50.gap-4.bg-background.p-6.shadow-lg,
+    header.sticky.bg-card,
+    footer.border-t,
+    nav.fixed.bottom-0.bg-card,
+    [data-radix-select-content],
+    [data-radix-dropdown-menu-content] {
+      @apply apply-glass-animation;
+    }
   }
 }
