@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { Shapes, Search, PlusCircle, Users, MessageCircle, Target, Pin, MessagesSquare, CalendarDays, Settings2 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link"; // Import Link
 import React from "react";
+import { mockCommunities } from "@/lib/communityData"; // Import mock data
 
 interface CommunityFeatureHighlightCardProps {
   icon: React.ReactNode;
@@ -31,18 +33,10 @@ const CommunityFeatureHighlightCard: React.FC<CommunityFeatureHighlightCardProps
   );
 };
 
-
-// Mock data for demonstration
-const mockUserCommunities = [
-  { id: "1", name: "Local Run Club", members: 42, imageSeed: "runclub", description: "Weekly runs and marathon training." },
-  { id: "2", name: "Weekend Coders", members: 12, imageSeed: "coders", description: "Collaborative coding projects and tech talks." },
-];
-
-const mockDiscoverCommunities = [
-    { id: "3", name: "Art Enthusiasts", members: 78, imageSeed: "artgroup", description: "Share and discuss art, plan gallery visits." },
-    { id: "4", name: "Bookworms United", members: 150, imageSeed: "bookclub", description: "Monthly book discussions and author Q&As." },
-    { id: "5", name: "Sustainable Living Advocates", members: 65, imageSeed: "ecogroup", description: "Tips, projects, and discussions on sustainable practices." },
-];
+// Assuming user is part of first two communities for demo
+const userCommunityIds = [mockCommunities[0].id, mockCommunities[1].id]; 
+const mockUserCommunities = mockCommunities.filter(c => userCommunityIds.includes(c.id));
+const mockDiscoverCommunities = mockCommunities.filter(c => !userCommunityIds.includes(c.id));
 
 
 export default function CommunitiesPage() {
@@ -96,7 +90,9 @@ export default function CommunitiesPage() {
                         <p className="text-sm text-muted-foreground">{community.description}</p>
                       </CardContent>
                       <CardFooter>
-                        <Button variant="outline" size="sm" className="w-full">View Community</Button>
+                        <Button asChild variant="outline" size="sm" className="w-full">
+                           <Link href={`/communities/${community.id}`}>View Community</Link>
+                        </Button>
                       </CardFooter>
                     </Card>
                   ))}
