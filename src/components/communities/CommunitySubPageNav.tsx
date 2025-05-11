@@ -7,6 +7,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import { MessageSquare, CalendarDays, MessagesSquare, Pin, LayoutDashboard } from "lucide-react";
+import { cn } from "@/lib/utils"; // Added import for cn
 
 interface CommunitySubPageNavProps {
   communityId: string;
@@ -53,3 +54,4 @@ export default function CommunitySubPageNav({ communityId, subPages, className }
     </Tabs>
   );
 }
+
