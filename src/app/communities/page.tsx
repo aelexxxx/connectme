@@ -2,7 +2,7 @@
 "use client";
 import AppLayout from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { Shapes, Search, PlusCircle, Users, MessageCircle, Target, Pin, MessagesSquare, CalendarDays, Settings2 } from "lucide-react";
