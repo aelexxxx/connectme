@@ -5,7 +5,7 @@ export interface SubPage {
   id: string;
   name: string;
   type: 'chat' | 'calendar' | 'forum' | 'pinboard' | 'overview';
-  icon?: LucideIcon; // Optional: for display in navigation
+  iconName?: string; // Changed from icon?: LucideIcon
   // Specific content/data for each sub-page type can be added here later
   // For example, for 'forum', it might be an array of topics.
   // For 'calendar', an array of events.

@@ -6,12 +6,26 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
+import { MessageSquare, CalendarDays, MessagesSquare, Pin, LayoutDashboard } from "lucide-react";
 
 interface CommunitySubPageNavProps {
   communityId: string;
   subPages: SubPage[];
   className?: string;
 }
+
+const iconMap: { [key: string]: LucideIcon } = {
+  MessageSquare,
+  CalendarDays,
+  MessagesSquare,
+  Pin,
+  LayoutDashboard,
+};
+
+const getIconByName = (name?: string): LucideIcon | null => {
+  if (!name || !iconMap[name]) return LayoutDashboard; // Default icon if not found or name is undefined
+  return iconMap[name];
+};
 
 export default function CommunitySubPageNav({ communityId, subPages, className }: CommunitySubPageNavProps) {
   const pathname = usePathname();
@@ -25,7 +39,7 @@ export default function CommunitySubPageNav({ communityId, subPages, className }
     <Tabs value={currentSubPageId} className={className}>
       <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:flex lg:flex-wrap">
         {subPages.map((subPage) => {
-          const IconComponent = subPage.icon as LucideIcon | undefined;
+          const IconComponent = getIconByName(subPage.iconName);
           return (
             <TabsTrigger key={subPage.id} value={subPage.id} asChild className="flex-grow data-[state=active]:shadow-md">
               <Link href={`/communities/${communityId}/${subPage.id}`} className="flex items-center gap-2">
