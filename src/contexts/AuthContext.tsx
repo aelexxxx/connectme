@@ -17,8 +17,17 @@ export interface BlogPost {
   date: string;
 }
 
+export interface GlassmorphismOptions {
+  gradientColor1?: string;
+  gradientColor2?: string;
+  animatedGradient?: boolean;
+  blurIntensity?: number; // e.g., 5-20
+}
+
 export interface UserSettings {
   theme: 'light' | 'dark' | 'system';
+  themeStyle: 'default' | 'glassmorphism';
+  glassmorphismOptions?: GlassmorphismOptions;
   notifications: {
     newConnectionEmail: boolean;
     activityUpdateEmail: boolean;
@@ -63,8 +72,15 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const DEFAULT_USER_SETTINGS: UserSettings = {
+export const DEFAULT_USER_SETTINGS: UserSettings = {
   theme: 'system',
+  themeStyle: 'default',
+  glassmorphismOptions: {
+    gradientColor1: '#60a5fa', // Default light blue (rgb(96, 165, 250))
+    gradientColor2: '#c084fc', // Default light purple (rgb(192, 132, 252))
+    animatedGradient: false,
+    blurIntensity: 10,
+  },
   notifications: {
     newConnectionEmail: true,
     activityUpdateEmail: true,
@@ -103,7 +119,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
       // Ensure settings exist, merge with defaults if not fully present
-      parsedUser.settings = { ...DEFAULT_USER_SETTINGS, ...(parsedUser.settings || {}) };
+      parsedUser.settings = { 
+        ...DEFAULT_USER_SETTINGS, 
+        ...(parsedUser.settings || {}),
+        glassmorphismOptions: {
+          ...DEFAULT_USER_SETTINGS.glassmorphismOptions,
+          ...(parsedUser.settings?.glassmorphismOptions || {})
+        },
+        notifications: {
+          ...DEFAULT_USER_SETTINGS.notifications,
+          ...(parsedUser.settings?.notifications || {})
+        },
+        privacy: {
+          ...DEFAULT_USER_SETTINGS.privacy,
+          ...(parsedUser.settings?.privacy || {})
+        }
+      };
       setUser(parsedUser);
     } else if (storedGuest === 'true') {
       setIsGuest(true);
@@ -191,9 +222,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const updateUserSettings = (updatedSettings: Partial<UserSettings>) => {
     if (user) {
       const newSettings = {
-        ...(user.settings || DEFAULT_USER_SETTINGS), // Base on existing or default
-        ...updatedSettings, // Apply partial updates
-        notifications: { // Deep merge for nested objects
+        ...(user.settings || DEFAULT_USER_SETTINGS), 
+        ...updatedSettings, 
+        notifications: { 
           ...(user.settings?.notifications || DEFAULT_USER_SETTINGS.notifications),
           ...updatedSettings.notifications,
         },
@@ -201,6 +232,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           ...(user.settings?.privacy || DEFAULT_USER_SETTINGS.privacy),
           ...updatedSettings.privacy,
         },
+        glassmorphismOptions: {
+          ...(user.settings?.glassmorphismOptions || DEFAULT_USER_SETTINGS.glassmorphismOptions),
+          ...updatedSettings.glassmorphismOptions,
+        }
       };
       updateProfile({ settings: newSettings });
     }
@@ -303,11 +338,22 @@ export const useAuth = () => {
 };
 export const useAuthSettings = () => {
   const context = useAuth();
+  // Ensure glassmorphismOptions are defaulted if not present
+  const currentSettings = context.user?.settings || DEFAULT_USER_SETTINGS;
+  const glassmorphismOptions = {
+    ...DEFAULT_USER_SETTINGS.glassmorphismOptions,
+    ...currentSettings.glassmorphismOptions,
+  };
+  
   return { 
-    settings: context.user?.settings || DEFAULT_USER_SETTINGS, 
+    settings: {
+      ...currentSettings,
+      glassmorphismOptions,
+    },
     updateUserSettings: context.updateUserSettings,
     isGuest: context.isGuest,
     user: context.user,
     deleteAccount: context.deleteAccount,
   };
 };
+

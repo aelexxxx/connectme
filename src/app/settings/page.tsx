@@ -1,4 +1,3 @@
-
 "use client";
 
 import AppLayout from "@/components/layout/AppLayout";
@@ -10,9 +9,10 @@ import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useAuthSettings } from "@/contexts/AuthContext";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Sun, Moon, Laptop, Bell, Lock, Trash2, Palette, ShieldAlert, UserCog } from "lucide-react";
+import { Sun, Moon, Laptop, Bell, Lock, Trash2, Palette, ShieldAlert, UserCog, Layers, Wand2, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input"; // Added for color input
 
 export default function SettingsPage() {
   const { settings, updateUserSettings, isGuest, user, deleteAccount } = useAuthSettings();
@@ -20,7 +20,6 @@ export default function SettingsPage() {
   const router = useRouter();
 
   if (isGuest || !user) {
-    // This should ideally be handled by AuthProvider redirects, but as a fallback:
     if (typeof window !== "undefined") router.push("/login");
     return (
       <AppLayout>
@@ -36,6 +35,21 @@ export default function SettingsPage() {
     toast({ title: "Appearance Updated", description: `Theme set to ${theme}.` });
   };
 
+  const handleThemeStyleChange = (style: 'default' | 'glassmorphism') => {
+    updateUserSettings({ themeStyle: style });
+    toast({ title: "Theme Style Updated", description: `Style set to ${style}.` });
+  };
+
+  const handleGlassmorphismOptionChange = (option: keyof NonNullable<typeof settings.glassmorphismOptions>, value: any) => {
+    updateUserSettings({
+      glassmorphismOptions: {
+        ...settings.glassmorphismOptions,
+        [option]: value,
+      },
+    });
+    toast({ title: "Glassmorphism Settings Updated" });
+  };
+
   const handleNotificationChange = (key: keyof typeof settings.notifications, value: boolean) => {
     updateUserSettings({ notifications: { ...settings.notifications, [key]: value } });
      toast({ title: "Notification Settings Updated" });
@@ -47,7 +61,7 @@ export default function SettingsPage() {
   };
   
   const handleDeleteAccount = () => {
-    deleteAccount(); // This will also redirect to login via AuthContext logic
+    deleteAccount(); 
     toast({ title: "Account Deleted", description: "Your account has been successfully deleted.", variant: "destructive"});
   };
 
@@ -76,27 +90,107 @@ export default function SettingsPage() {
             </CardTitle>
             <CardDescription>Customize the look and feel of the application.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Label className="text-base font-medium">Theme</Label>
-            <RadioGroup
-              value={settings.theme}
-              onValueChange={(value: 'light' | 'dark' | 'system') => handleThemeChange(value)}
-              className="grid grid-cols-1 sm:grid-cols-3 gap-4"
-            >
-              {(['light', 'dark', 'system'] as const).map((themeOption) => (
-                <Label
-                  key={themeOption}
-                  htmlFor={`theme-${themeOption}`}
-                  className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary cursor-pointer transition-all"
-                >
-                  <RadioGroupItem value={themeOption} id={`theme-${themeOption}`} className="sr-only" />
-                  {themeOption === 'light' && <Sun className="mb-2 h-7 w-7" />}
-                  {themeOption === 'dark' && <Moon className="mb-2 h-7 w-7" />}
-                  {themeOption === 'system' && <Laptop className="mb-2 h-7 w-7" />}
-                  <span className="font-semibold capitalize">{themeOption}</span>
-                </Label>
-              ))}
-            </RadioGroup>
+          <CardContent className="space-y-6">
+            <div>
+              <Label className="text-base font-medium">Color Scheme</Label>
+              <RadioGroup
+                value={settings.theme}
+                onValueChange={(value: 'light' | 'dark' | 'system') => handleThemeChange(value)}
+                className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2"
+              >
+                {(['light', 'dark', 'system'] as const).map((themeOption) => (
+                  <Label
+                    key={themeOption}
+                    htmlFor={`theme-${themeOption}`}
+                    className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary cursor-pointer transition-all"
+                  >
+                    <RadioGroupItem value={themeOption} id={`theme-${themeOption}`} className="sr-only" />
+                    {themeOption === 'light' && <Sun className="mb-2 h-7 w-7" />}
+                    {themeOption === 'dark' && <Moon className="mb-2 h-7 w-7" />}
+                    {themeOption === 'system' && <Laptop className="mb-2 h-7 w-7" />}
+                    <span className="font-semibold capitalize">{themeOption}</span>
+                  </Label>
+                ))}
+              </RadioGroup>
+            </div>
+            <Separator />
+            <div>
+              <Label className="text-base font-medium">UI Style</Label>
+              <RadioGroup
+                value={settings.themeStyle}
+                onValueChange={(value: 'default' | 'glassmorphism') => handleThemeStyleChange(value)}
+                className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2"
+              >
+                 <Label
+                    htmlFor="theme-style-default"
+                    className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary cursor-pointer transition-all"
+                  >
+                    <RadioGroupItem value="default" id="theme-style-default" className="sr-only" />
+                    <Layers className="mb-2 h-7 w-7" />
+                    <span className="font-semibold">Default</span>
+                  </Label>
+                  <Label
+                    htmlFor="theme-style-glassmorphism"
+                    className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary cursor-pointer transition-all"
+                  >
+                    <RadioGroupItem value="glassmorphism" id="theme-style-glassmorphism" className="sr-only" />
+                    <Wand2 className="mb-2 h-7 w-7" />
+                    <span className="font-semibold">Glassmorphism</span>
+                  </Label>
+              </RadioGroup>
+            </div>
+
+            {settings.themeStyle === 'glassmorphism' && (
+              <Card className="p-4 bg-muted/30 border-dashed">
+                <CardHeader className="p-0 pb-4">
+                  <CardTitle className="text-lg flex items-center"><Sparkles className="mr-2 h-5 w-5 text-primary/70" />Glassmorphism Options</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="glass-color-1">Gradient Color 1</Label>
+                      <Input
+                        id="glass-color-1"
+                        type="color"
+                        value={settings.glassmorphismOptions?.gradientColor1 || '#60a5fa'}
+                        onChange={(e) => handleGlassmorphismOptionChange('gradientColor1', e.target.value)}
+                        className="mt-1 w-full h-10 p-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="glass-color-2">Gradient Color 2</Label>
+                      <Input
+                        id="glass-color-2"
+                        type="color"
+                        value={settings.glassmorphismOptions?.gradientColor2 || '#c084fc'}
+                        onChange={(e) => handleGlassmorphismOptionChange('gradientColor2', e.target.value)}
+                        className="mt-1 w-full h-10 p-1"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-background rounded-lg">
+                    <Label htmlFor="animated-gradient" className="text-sm cursor-pointer">Flowing Gradient Animation</Label>
+                    <Switch
+                      id="animated-gradient"
+                      checked={settings.glassmorphismOptions?.animatedGradient || false}
+                      onCheckedChange={(value) => handleGlassmorphismOptionChange('animatedGradient', value)}
+                    />
+                  </div>
+                   {/* Blur Intensity - future enhancement
+                   <div>
+                    <Label htmlFor="blur-intensity">Blur Intensity ({settings.glassmorphismOptions?.blurIntensity || 10}px)</Label>
+                    <Input 
+                      id="blur-intensity" 
+                      type="range" min="0" max="30" 
+                      value={settings.glassmorphismOptions?.blurIntensity || 10}
+                      onChange={(e) => handleGlassmorphismOptionChange('blurIntensity', parseInt(e.target.value))}
+                      className="w-full mt-1"
+                    />
+                  </div> */}
+                </CardContent>
+              </Card>
+            )}
+
           </CardContent>
         </Card>
 

@@ -53,6 +53,22 @@ body {
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+
+    /* Glassmorphism Defaults - Light Mode */
+    --glass-color-one-light: 210 100% 88%; /* Light Blue */
+    --glass-color-two-light: 280 100% 92%; /* Light Purple */
+    --glass-border-color-light: 220 60% 95% / 0.5;
+    --glass-shadow-light: 0 8px 32px 0 rgba(31, 38, 135, 0.2); /* Softer shadow */
+    --glass-blur-intensity: 10px;
+    --glass-text-color-light: var(--foreground);
+
+    /* Dynamic vars to be set by JS, defaulting to light mode glass vars */
+    --dynamic-glass-color-one: hsl(var(--glass-color-one-light));
+    --dynamic-glass-color-two: hsl(var(--glass-color-two-light));
+    --dynamic-glass-blur: var(--glass-blur-intensity);
+    --dynamic-glass-border-color: hsl(var(--glass-border-color-light));
+    --dynamic-glass-shadow: var(--glass-shadow-light);
+    --dynamic-glass-text-color: var(--glass-text-color-light);
   }
 
   .dark {
@@ -100,6 +116,55 @@ body {
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+
+    /* Glassmorphism Defaults - Dark Mode */
+    --glass-color-one-dark: 220 40% 15%; /* Darker Blue */
+    --glass-color-two-dark: 290 40% 20%; /* Darker Purple */
+    --glass-border-color-dark: 230 30% 30% / 0.6;
+    --glass-shadow-dark: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
+    /* Blur intensity can be the same or different for dark mode */
+    --glass-text-color-dark: var(--foreground); /* Use dark mode foreground */
+  }
+
+  .theme-glassmorphism {
+    /* Redefine component vars for glassmorphism */
+    --card: transparent; 
+    --popover: transparent;
+    /* Use var(--background) for the main page background, components will float on top */
+    
+    /* These are the properties that glass surfaces will use */
+    --glass-surface-background-image: linear-gradient(135deg, var(--dynamic-glass-color-one), var(--dynamic-glass-color-two));
+    --glass-surface-backdrop-filter: blur(var(--dynamic-glass-blur));
+    --glass-surface-webkit-backdrop-filter: blur(var(--dynamic-glass-blur));
+    --glass-surface-border: 1px solid var(--dynamic-glass-border-color);
+    --glass-surface-box-shadow: var(--dynamic-glass-shadow);
+    --glass-surface-border-radius: var(--radius);
+    --glass-surface-text-color: var(--dynamic-glass-text-color);
+
+    /* Override text colors on glass if needed, but usually --foreground is fine */
+    --card-foreground: var(--dynamic-glass-text-color);
+    --popover-foreground: var(--dynamic-glass-text-color);
+    /* --muted-foreground might need adjustment if it's too faint on glass */
+    --muted-foreground: color-mix(in srgb, var(--dynamic-glass-text-color) 60%, transparent);
+  }
+  
+  .theme-glassmorphism.dark {
+      --dynamic-glass-color-one: hsl(var(--glass-color-one-dark));
+      --dynamic-glass-color-two: hsl(var(--glass-color-two-dark));
+      --dynamic-glass-border-color: hsl(var(--glass-border-color-dark));
+      --dynamic-glass-shadow: var(--glass-shadow-dark);
+      --dynamic-glass-text-color: var(--glass-text-color-dark);
+  }
+
+  @keyframes flowing-gradient {
+    0% { background-position: 0% 0%; }
+    50% { background-position: 100% 100%; }
+    100% { background-position: 0% 0%; }
+  }
+
+  .theme-glassmorphism.animate-gradient {
+    --glass-animation: flowing-gradient 20s linear infinite;
+    --glass-background-size: 300% 300%; /* Needs to be larger for animation */
   }
 }
 
@@ -109,5 +174,113 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Apply glass effect to specific components */
+@layer components {
+  /* Define .glass-surface-styles here, so it's a standalone component class */
+  .glass-surface-styles {
+    background-image: var(--glass-surface-background-image) !important;
+    background-color: transparent !important; /* Override explicit bg-card etc. */
+    backdrop-filter: var(--glass-surface-backdrop-filter) !important;
+    -webkit-backdrop-filter: var(--glass-surface-webkit-backdrop-filter) !important;
+    border: var(--glass-surface-border) !important;
+    box-shadow: var(--glass-surface-box-shadow) !important;
+    border-radius: var(--glass-surface-border-radius) !important;
+    color: var(--glass-surface-text-color) !important;
+    animation: var(--glass-animation);
+    background-size: var(--glass-background-size, cover);
+  }
+
+  .theme-glassmorphism {
+    /* Now apply it to specific selectors when theme-glassmorphism is active */
+
+    /* Card: Targets the div from Card component in ui/card.tsx */
+    .rounded-lg.border.bg-card.text-card-foreground.shadow-sm {
+      @apply glass-surface-styles;
+    }
+
+    /* PopoverContent: Targets content part of Popover */
+    [data-radix-popper-content-wrapper] > .z-50.w-72.rounded-md.border.bg-popover.p-4.text-popover-foreground.shadow-md {
+      @apply glass-surface-styles;
+    }
+    /* Fallback selector if the above is too specific or changes */
+    .bg-popover[role="dialog"], .bg-popover[data-state="open"] {
+        &:not(:where(.dummy-selector-to-lower-specificity)) { /* Scoping to avoid over-applying */
+             @apply glass-surface-styles;
+        }
+    }
+
+
+    /* DialogContent: Targets content part of Dialog */
+    .fixed.left-\[50\%\].top-\[50\%\].z-50.grid.w-full.max-w-lg.translate-x-\[-50\%\].translate-y-\[-50\%\].gap-4.border.bg-background.p-6.shadow-lg.sm\:rounded-lg[role="dialog"] {
+       @apply glass-surface-styles;
+       /* Dialogs use --background, so we ensure its text is readable */
+       color: var(--glass-surface-text-color) !important;
+    }
+     /* Fallback selector for DialogContent */
+    .bg-background[role="alertdialog"], .bg-background[role="dialog"] {
+       &:not(:where(.dummy-selector-to-lower-specificity)) {
+            @apply glass-surface-styles;
+       }
+    }
+
+
+    /* SheetContent: Targets content part of Sheet */
+    /* The sheet has variants (left, right, top, bottom), so we target the common part */
+    .fixed.z-50.gap-4.bg-background.p-6.shadow-lg {
+      @apply glass-surface-styles;
+      color: var(--glass-surface-text-color) !important;
+    }
+    
+    /* App Header (from AppLayout - sticky top-0 ... bg-card ) */
+    header.sticky.bg-card {
+      @apply glass-surface-styles;
+      border-radius: 0 !important; /* Headers typically aren't rounded */
+      /* Original has border-b, glass-surface-border will handle it */
+    }
+
+    /* App Footer (from AppLayout - py-4 ... border-t) */
+    footer.border-t { /* Footer might not have bg-card by default */
+      @apply glass-surface-styles;
+      border-radius: 0 !important;
+      /* Original has border-t */
+    }
+    
+    /* Mobile Nav Bar (from AppLayout - fixed bottom-0 ... bg-card) */
+    nav.fixed.bottom-0.bg-card {
+        @apply glass-surface-styles;
+        border-radius: 0 !important;
+         /* Original has border-t */
+    }
+
+    /* Adjust input fields on glassmorphism theme for better visibility */
+    .bg-input, input, textarea, .bg-background select {
+        background-color: color-mix(in srgb, var(--dynamic-glass-border-color) 20%, transparent) !important;
+        border-color: color-mix(in srgb, var(--dynamic-glass-border-color) 80%, transparent) !important;
+        color: var(--dynamic-glass-text-color) !important;
+    }
+     input::placeholder, textarea::placeholder {
+        color: color-mix(in srgb, var(--dynamic-glass-text-color) 70%, transparent) !important;
+    }
+
+    /* Buttons may need slight adjustments for contrast on glass */
+    /* Primary button (bg-primary) uses CSS variables and should adapt well */
+    
+    /* Outline button specific overrides for glassmorphism */
+    /* Default Shadcn/ui outline button class: .border.border-input.bg-background.hover\:bg-accent.hover\:text-accent-foreground */
+    .border.border-input.bg-background.hover\:bg-accent.hover\:text-accent-foreground {
+        background-color: transparent !important;
+        border-color: var(--dynamic-glass-text-color) !important;
+        color: var(--dynamic-glass-text-color) !important;
+    }
+    /* Hover state for the outline button in glassmorphism */
+    .border.border-input.bg-background.hover\:bg-accent.hover\:text-accent-foreground:hover {
+        background-color: color-mix(in srgb, var(--dynamic-glass-text-color) 15%, transparent) !important;
+        color: var(--dynamic-glass-text-color) !important; /* Override hover:text-accent-foreground */
+        /* border-color can remain --dynamic-glass-text-color or be adjusted if needed */
+    }
+
   }
 }
