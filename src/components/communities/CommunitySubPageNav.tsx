@@ -36,13 +36,13 @@ export default function CommunitySubPageNav({ communityId, subPages, className }
   }
 
   return (
-    <Tabs value={currentSubPageId} className={className}>
-      <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:flex lg:flex-wrap">
+    <Tabs value={currentSubPageId} className={cn("w-full", className)}>
+      <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:flex lg:flex-wrap gap-1 h-auto">
         {subPages.map((subPage) => {
           const IconComponent = getIconByName(subPage.iconName);
           return (
-            <TabsTrigger key={subPage.id} value={subPage.id} asChild className="flex-grow data-[state=active]:shadow-md">
-              <Link href={`/communities/${communityId}/${subPage.id}`} className="flex items-center gap-2">
+            <TabsTrigger key={subPage.id} value={subPage.id} asChild className="flex-grow data-[state=active]:shadow-md data-[state=active]:bg-card py-2.5">
+              <Link href={`/communities/${communityId}/${subPage.id}`} className="flex items-center justify-center gap-2 text-sm">
                 {IconComponent && <IconComponent className="h-4 w-4" />}
                 {subPage.name}
               </Link>

@@ -3,7 +3,8 @@ import type { ReactNode } from 'react';
 import { getCommunityById } from '@/lib/communityData';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
-import { notFound } from 'next/navigation';
+// notFound from next/navigation should be used when available in the environment
+// import { notFound } from 'next/navigation'; 
 import CommunitySubPageNav from '@/components/communities/CommunitySubPageNav';
 import { AlertTriangle } from 'lucide-react';
 
@@ -17,9 +18,7 @@ export default function CommunityLayout({
   const community = getCommunityById(params.communityId);
 
   if (!community) {
-    // Or use Next.js notFound() for a proper 404 page
-    // notFound(); 
-    // For now, just show a message if notFound() isn't fully set up for App Router root.
+    // For now, just show a message if notFound() isn't fully set up or preferred.
      return (
       <div className="container mx-auto py-8">
         <Card>
@@ -39,7 +38,7 @@ export default function CommunityLayout({
 
   return (
     <div className="space-y-6">
-      <Card className="overflow-hidden shadow-lg">
+      <Card className="overflow-hidden shadow-xl">
         <div className="relative h-48 md:h-64 w-full bg-muted">
           <Image
             src={`https://picsum.photos/seed/${community.imageSeed}-banner/1200/400`}
@@ -49,21 +48,24 @@ export default function CommunityLayout({
             data-ai-hint="community event photo"
             priority
           />
-          <div className="absolute inset-0 bg-black/30 flex items-end p-6">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent flex flex-col justify-end p-6">
             <h1 className="text-3xl md:text-4xl font-bold text-white shadow-md">{community.name}</h1>
+             <p className="text-sm text-white/90 mt-1">{community.members} members</p>
           </div>
         </div>
         <CardContent className="p-4 md:p-6">
           <p className="text-muted-foreground">{community.description}</p>
-          <p className="text-sm text-primary mt-1">{community.members} members</p>
         </CardContent>
       </Card>
 
       {community.subPages && community.subPages.length > 0 && (
-        <CommunitySubPageNav communityId={community.id} subPages={community.subPages} className="mb-6" />
+         <div className="sticky top-[calc(theme(spacing.16)_-_1px)] sm:top-16 z-10 bg-background/80 backdrop-blur-sm -mx-2 px-2 md:-mx-0 md:px-0 py-2 rounded-b-md md:rounded-md shadow-sm">
+            <CommunitySubPageNav communityId={community.id} subPages={community.subPages} />
+        </div>
       )}
       
       <div>{children}</div>
     </div>
   );
 }
+

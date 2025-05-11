@@ -1,10 +1,10 @@
 
 "use client";
 import type { ReactNode } from 'react';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
-import { Home, User, Users, LogOut, Settings, Terminal, UserCircle, ChevronRight, Settings2, UserCog, Shapes, Package, Rows, Columns } from 'lucide-react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { Home, User, Users, LogOut, Settings, Terminal, UserCircle, ChevronRight, Settings2, UserCog, Shapes, Package, Rows, Columns, Search, Library } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,6 +37,11 @@ const staticPageDetails: { [key: string]: { name: string; icon: JSX.Element; hre
   '/settings': { name: 'Settings', icon: <UserCog className="h-5 w-5" />, href: '/settings' },
 };
 
+const communityPageTabsDetails: { [key: string]: { name: string; icon: JSX.Element; hrefPart: string } } = {
+  'your-communities': { name: 'Your Communities', icon: <Library className="h-5 w-5" />, hrefPart: 'your-communities' },
+  'discover': { name: 'Discover & Features', icon: <Search className="h-5 w-5" />, hrefPart: 'discover' },
+};
+
 
 export default function AppLayout({ children }: AppLayoutProps) {
   const { user, logout, isGuest, loading } = useAuth();
@@ -44,6 +49,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const layoutMode = settings.layoutMode || 'stacked';
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
@@ -65,56 +71,74 @@ export default function AppLayout({ children }: AppLayoutProps) {
     icon: React.cloneElement(icon, { className: "mr-2 h-4 w-4" }),
   }));
   
-  const generateBreadcrumbs = (path: string): BreadcrumbItem[] => {
-    const segments = path.split('/').filter(Boolean);
+  const breadcrumbItems = useMemo(() => {
+    const pathSegments = pathname.split('/').filter(Boolean);
     const breadcrumbs: BreadcrumbItem[] = [];
 
-    if (path === '/') {
+    if (pathname === '/') { // Should redirect to /dashboard, but handle just in case
       if (staticPageDetails['/dashboard']) {
-        breadcrumbs.push({ ...staticPageDetails['/dashboard'] });
-      } else {
-        breadcrumbs.push({ name: 'Dashboard', href: '/dashboard', icon: <Home className="h-5 w-5" /> });
+         breadcrumbs.push({ ...staticPageDetails['/dashboard'] });
       }
       return breadcrumbs;
     }
-
-    if (segments.length === 0) return []; 
-
-    const firstSegmentKey = `/${segments[0]}`;
+    
+    // Handle top-level static pages
+    const firstSegmentKey = `/${pathSegments[0]}`;
     if (staticPageDetails[firstSegmentKey]) {
       breadcrumbs.push({ ...staticPageDetails[firstSegmentKey] });
-    } else {
+    } else if (pathSegments.length > 0) {
+      // Fallback for unknown top-level segments (e.g. if a new page is added without static details)
       breadcrumbs.push({ 
-        name: segments[0].charAt(0).toUpperCase() + segments[0].slice(1), 
+        name: pathSegments[0].charAt(0).toUpperCase() + pathSegments[0].slice(1), 
         href: firstSegmentKey, 
         icon: <Package className="h-5 w-5" /> 
       });
     }
-    
-    if (segments[0] === 'communities' && segments.length > 1) {
-      const communityId = segments[1];
+
+    // Handle /communities page with tabs
+    if (pathname === '/communities') {
+      const currentTab = searchParams.get('tab') || 'your-communities'; // Default to 'your-communities'
+      if (communityPageTabsDetails[currentTab]) {
+        breadcrumbs.push({
+          name: communityPageTabsDetails[currentTab].name,
+          href: `/communities?tab=${communityPageTabsDetails[currentTab].hrefPart}`,
+          icon: communityPageTabsDetails[currentTab].icon, // Use tab-specific icon
+        });
+      } else {
+         // Fallback if tab param is invalid
+         breadcrumbs.push({
+          name: communityPageTabsDetails['your-communities'].name,
+          href: `/communities?tab=${communityPageTabsDetails['your-communities'].hrefPart}`,
+          icon: communityPageTabsDetails['your-communities'].icon,
+        });
+      }
+    }
+    // Handle specific community and sub-pages
+    else if (pathSegments[0] === 'communities' && pathSegments.length > 1) {
+      const communityId = pathSegments[1];
       const community = getCommunityById(communityId);
       
       if (community) {
+        // The first breadcrumb is "Communities", add community name
         breadcrumbs.push({ name: community.name, href: `/communities/${community.id}` });
         
-        if (segments.length > 2) { 
-          const subPageId = segments[2];
+        if (pathSegments.length > 2) { 
+          const subPageId = pathSegments[2];
           const subPage = getSubPageById(community.id, subPageId);
           if (subPage) {
             breadcrumbs.push({ name: subPage.name, href: `/communities/${community.id}/${subPage.id}` });
           } else {
-            breadcrumbs.push({ name: subPageId, href: `/communities/${community.id}/${subPageId}` });
+            // Fallback for unknown sub-page
+            breadcrumbs.push({ name: subPageId.charAt(0).toUpperCase() + subPageId.slice(1), href: `/communities/${community.id}/${subPageId}` });
           }
         }
-      } else {
-        breadcrumbs.push({ name: communityId, href: `/communities/${communityId}` });
+      } else if (pathSegments.length > 1 && pathSegments[0] === 'communities'){
+        // Fallback for unknown community
+        breadcrumbs.push({ name: communityId.charAt(0).toUpperCase() + communityId.slice(1), href: `/communities/${communityId}` });
       }
     }
     return breadcrumbs;
-  };
-  
-  const breadcrumbItems = generateBreadcrumbs(pathname);
+  }, [pathname, searchParams]);
 
 
   if (loading || !mounted) {
@@ -127,6 +151,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
       </div>
     );
   }
+
+  // Determine if page-specific tabs should override main horizontal tabs
+  const hasPageSpecificTabs = pathname.startsWith('/communities');
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
@@ -159,17 +186,19 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <div className="flex items-center gap-1 overflow-hidden text-ellipsis whitespace-nowrap">
             {breadcrumbItems.map((item, index) => (
               <React.Fragment key={item.href + '-' + index}>
-                {index > 0 && <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />}
+                {/* Chevron already present from dropdown trigger */}
+                {/* {index > 0 && <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />} */}
                 <Link href={item.href} className="flex items-center gap-1 hover:underline flex-shrink-0" title={item.name}>
-                  {index === 0 && item.icon && React.cloneElement(item.icon, { className: "h-5 w-5 text-foreground"})}
-                  <span className={`text-foreground ${index > 0 ? 'truncate max-w-[100px] sm:max-w-[150px] md:max-w-[200px]' : 'font-medium'}`}>{item.name}</span>
+                  {item.icon && React.cloneElement(item.icon, { className: "h-5 w-5 text-foreground"})}
+                  <span className={`text-foreground ${index === breadcrumbItems.length -1 ? 'font-medium' : 'text-sm'} truncate max-w-[100px] sm:max-w-[150px] md:max-w-[200px]`}>{item.name}</span>
                 </Link>
+                {index < breadcrumbItems.length - 1 && <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />}
               </React.Fragment>
             ))}
-            {breadcrumbItems.length === 0 && (
+            {breadcrumbItems.length === 0 && pathname !== '/' && ( // Handle case where path is known but no breadcrumbs generated (e.g. root redirecting)
                  <div className="flex items-center gap-1">
-                    <Terminal className="h-5 w-5 text-foreground"/>
-                    <span className="text-foreground font-medium">ConnectMe</span>
+                    {/* <Package className="h-5 w-5 text-foreground"/> */}
+                    <span className="text-foreground font-medium">{pathname.split('/').filter(Boolean).pop()?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Page'}</span>
                 </div>
             )}
           </div>
@@ -244,7 +273,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </div>
       </header>
       
-      {layoutMode === 'horizontal' && (
+      {layoutMode === 'horizontal' && !hasPageSpecificTabs && (
         <Tabs value={pathname} className="sticky top-16 z-20 w-full border-b bg-background/90 backdrop-blur-sm">
           <TabsList className="grid w-full grid-cols-5 h-auto">
             {Object.values(staticPageDetails).map(page => (
@@ -259,7 +288,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </Tabs>
       )}
 
-      <main className={`flex-1 p-4 sm:p-6 md:p-8 ${layoutMode === 'stacked' || (layoutMode === 'horizontal' && isGuest) ? 'pb-20 md:pb-8' : 'pb-8'}`}>
+      <main className={`flex-1 p-4 sm:p-6 md:p-8 ${layoutMode === 'stacked' || (layoutMode === 'horizontal' && (isGuest || hasPageSpecificTabs)) ? 'pb-20 md:pb-8' : 'pb-8'}`}>
         <div className="mx-auto max-w-6xl space-y-6">
          {children}
         </div>
@@ -268,8 +297,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
         © {new Date().getFullYear()} ConnectMe. All rights reserved.
       </footer>
 
-      {/* Show mobile nav only in stacked mode OR if guest in horizontal (as tabs are not for guests) */}
-      {(layoutMode === 'stacked' || (layoutMode === 'horizontal' && isGuest)) && (
+      {/* Show mobile nav only in stacked mode OR if guest in horizontal OR if page has specific tabs (to avoid double tab bars) */}
+      {(layoutMode === 'stacked' || (layoutMode === 'horizontal' && (isGuest || hasPageSpecificTabs ))) && (
         <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card p-1 shadow-[0_-2px_5px_-1px_rgba(0,0,0,0.1)] md:hidden">
           <div className="grid grid-cols-4 gap-1">
             {mobileNavItems.map((item) => (
@@ -290,3 +319,4 @@ export default function AppLayout({ children }: AppLayoutProps) {
     </div>
   );
 }
+
