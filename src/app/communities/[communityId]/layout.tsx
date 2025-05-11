@@ -38,13 +38,14 @@ export default function CommunityLayout({
 
   return (
     <div className="space-y-6">
+      {/* Community Banner and Info */}
       <Card className="overflow-hidden shadow-xl">
         <div className="relative h-48 md:h-64 w-full bg-muted">
           <Image
             src={`https://picsum.photos/seed/${community.imageSeed}-banner/1200/400`}
             alt={`${community.name} banner`}
-            layout="fill"
-            objectFit="cover"
+            fill // Changed from layout="fill"
+            style={{objectFit: 'cover'}} // Changed from objectFit="cover"
             data-ai-hint="community event photo"
             priority
           />
@@ -58,14 +59,15 @@ export default function CommunityLayout({
         </CardContent>
       </Card>
 
+      {/* Sub-Page Navigation Tabs */}
       {community.subPages && community.subPages.length > 0 && (
          <div className="sticky top-[calc(theme(spacing.16)_-_1px)] sm:top-16 z-10 bg-background/80 backdrop-blur-sm -mx-2 px-2 md:-mx-0 md:px-0 py-2 rounded-b-md md:rounded-md shadow-sm">
             <CommunitySubPageNav communityId={community.id} subPages={community.subPages} />
         </div>
       )}
       
+      {/* Sub-Page Content */}
       <div>{children}</div>
     </div>
   );
 }
-
