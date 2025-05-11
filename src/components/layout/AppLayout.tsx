@@ -42,13 +42,22 @@ export default function AppLayout({ children }: AppLayoutProps) {
     logout();
   };
 
-  const navItems = [
+  // Mobile navigation items (bottom bar)
+  const mobileNavItems = [
     { href: '/dashboard', label: 'Dashboard', icon: <Home className="h-5 w-5" /> },
-    { href: '/profile', label: 'Profile', icon: <User className="h-5 w-5" /> },
+    { href: '/profile', label: 'Profile', icon: <User className="h-5 w-5" /> }, // User icon for mobile simplicity
     { href: '/connections', label: 'Connections', icon: <Users className="h-5 w-5" /> },
   ];
   
   const currentPage = pageDetails[pathname] || { name: 'Page', icon: <Terminal className="h-5 w-5" /> };
+
+  // Navigation items for the new header dropdown
+  const dropdownNavItems = Object.entries(pageDetails).map(([path, { name, icon }]) => ({
+    href: path,
+    label: name,
+    // Clone icon to add specific styling for dropdown menu item
+    icon: React.cloneElement(icon, { className: "mr-2 h-4 w-4" }), 
+  }));
 
 
   if (loading || !mounted) {
@@ -65,32 +74,35 @@ export default function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-card px-4 sm:px-6 shadow-sm">
-        <div className="flex items-center gap-2 text-lg font-semibold">
+        <div className="flex items-center gap-1 text-lg font-semibold"> {/* Adjusted gap */}
           <Link href="/dashboard" className="flex items-center gap-2 text-primary">
             <Terminal className="h-6 w-6" />
             <span>ConnectMe</span>
           </Link>
-          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0">
+                <ChevronRight className="h-5 w-5" />
+                <span className="sr-only">Open navigation menu</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuLabel>Go to</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {dropdownNavItems.map((item) => (
+                <DropdownMenuItem key={item.href} onClick={() => router.push(item.href)} className="cursor-pointer">
+                  {item.icon}
+                  <span>{item.label}</span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           {React.cloneElement(currentPage.icon, { className: "h-5 w-5 text-foreground"})}
           <span className="text-foreground">{currentPage.name}</span>
         </div>
         
-        {/* Desktop navigation is removed as per new design, breadcrumb serves as main nav */}
-        {/* 
-        <nav className="hidden items-center gap-5 text-sm font-medium md:flex">
-          {navItems.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={`transition-colors hover:text-primary ${
-                pathname === item.href ? 'text-primary font-semibold' : 'text-foreground/70'
-              }`}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-        */}
 
         <div className="flex items-center gap-4">
           {user || isGuest ? (
@@ -153,7 +165,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       
       <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card p-1 shadow-[0_-2px_5px_-1px_rgba(0,0,0,0.1)] md:hidden">
         <div className="grid grid-cols-3 gap-1">
-          {navItems.map((item) => (
+          {mobileNavItems.map((item) => (
             <Link
               key={`mobile-${item.label}`}
               href={item.href}
@@ -179,3 +191,4 @@ export default function AppLayout({ children }: AppLayoutProps) {
     </div>
   );
 }
+
