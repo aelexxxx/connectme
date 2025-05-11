@@ -76,10 +76,10 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   theme: 'system',
   themeStyle: 'default',
   glassmorphismOptions: {
-    // gradientColor1: undefined, // Let CSS defaults take precedence for initial look
-    // gradientColor2: undefined, // Let CSS defaults take precedence for initial look
+    gradientColor1: undefined, // Let CSS defaults take precedence (e.g. hsla(var(--glass-color-one-light-raw), var(--glass-opacity-light)))
+    gradientColor2: undefined, // Let CSS defaults take precedence
     animatedGradient: false,
-    blurIntensity: 12, // Default blur intensity
+    blurIntensity: 12, // Default blur intensity from CSS variables like --glass-blur-intensity-dark/light
   },
   notifications: {
     newConnectionEmail: true,
@@ -108,7 +108,7 @@ const MOCK_USER_BASE: Omit<User, 'id' | 'email' | 'name'> = {
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isGuest, setIsGuest] = useState(false); // Initialize to false, useEffect will update
+  const [isGuest, setIsGuest] = useState(false); 
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
@@ -158,7 +158,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       email, 
       name: baseName,
       photoUrl: MOCK_USER_BASE.photoUrl?.replace('profile', baseName.toLowerCase().replace(/\s+/g, '_')) || `https://picsum.photos/seed/${baseName.toLowerCase().replace(/\s+/g, '_')}/200/200`,
-      settings: { ...DEFAULT_USER_SETTINGS } // Ensure fresh settings on new login
+      settings: { ...DEFAULT_USER_SETTINGS } 
     };
     setUser(newUser);
     setIsGuest(false);
@@ -174,7 +174,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       email, 
       name,
       photoUrl: MOCK_USER_BASE.photoUrl?.replace('profile', name.toLowerCase().replace(/\s+/g, '_')) || `https://picsum.photos/seed/${name.toLowerCase().replace(/\s+/g, '_')}/200/200`,
-      settings: { ...DEFAULT_USER_SETTINGS } // Ensure fresh settings on new signup
+      settings: { ...DEFAULT_USER_SETTINGS } 
     };
     setUser(newUser);
     setIsGuest(false);
@@ -192,8 +192,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const deleteAccount = () => {
-    // In a real app, this would involve backend calls
-    logout(); // For mock, just log out
+    logout(); 
   };
 
   const enterGuestMode = () => {
@@ -206,7 +205,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const updateProfile = (updatedData: Partial<Omit<User, 'id' | 'email'>>) => {
     if (user) {
-      // Explicitly separate settings updates to avoid overwriting nested objects unintentionally
       const { settings, ...otherData } = updatedData;
       let newSettings = user.settings;
       if (settings) {
@@ -221,23 +219,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const updateUserSettings = (updatedSettings: Partial<UserSettings>) => {
     if (user) {
+      const currentSettings = user.settings || DEFAULT_USER_SETTINGS;
       const newSettings = {
-        ...(user.settings || DEFAULT_USER_SETTINGS), 
+        ...currentSettings, 
         ...updatedSettings, 
         notifications: { 
-          ...(user.settings?.notifications || DEFAULT_USER_SETTINGS.notifications),
+          ...currentSettings.notifications,
           ...updatedSettings.notifications,
         },
         privacy: {
-          ...(user.settings?.privacy || DEFAULT_USER_SETTINGS.privacy),
+          ...currentSettings.privacy,
           ...updatedSettings.privacy,
         },
         glassmorphismOptions: {
-          ...(user.settings?.glassmorphismOptions || DEFAULT_USER_SETTINGS.glassmorphismOptions),
+          ...currentSettings.glassmorphismOptions,
           ...updatedSettings.glassmorphismOptions,
         }
       };
       updateProfile({ settings: newSettings });
+    } else if (isGuest) {
+      // For guest mode, settings are not persisted but can be applied visually for the session.
+      // This part might need more thought if guest settings need to be stored (e.g. in session storage)
+      // For now, we are not saving guest settings.
+      console.warn("Attempted to update settings in guest mode. Guest settings are not persisted.");
     }
   };
 
@@ -295,14 +299,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (loading) return;
 
     const publicPaths = ['/', '/login', '/signup'];
-    // Allow /settings only if logged in (not guest)
     const guestForbiddenPaths = ['/settings'];
 
     const isPublicPath = publicPaths.some(publicPath => pathname === publicPath || (publicPath !== '/' && pathname.startsWith(publicPath + '/')));
     const isGuestForbiddenPath = guestForbiddenPaths.some(path => pathname === path);
 
     if (isGuest && isGuestForbiddenPath) {
-      router.push('/dashboard'); // Redirect guest from settings
+      router.push('/dashboard'); 
       return;
     }
     
@@ -339,23 +342,23 @@ export const useAuth = () => {
 
 export const useAuthSettings = () => {
   const context = useAuth();
-  // Ensure settings structure is complete by merging with defaults
+  // For guests or users without settings yet, provide defaults.
   const baseSettings = context.user?.settings || DEFAULT_USER_SETTINGS;
   
   const fullyPopulatedSettings: UserSettings = {
-    theme: baseSettings.theme || DEFAULT_USER_SETTINGS.theme,
-    themeStyle: baseSettings.themeStyle || DEFAULT_USER_SETTINGS.themeStyle,
-    glassmorphismOptions: {
+    ...DEFAULT_USER_SETTINGS, // Start with all defaults
+    ...baseSettings, // Override with user's base settings (theme, themeStyle)
+    glassmorphismOptions: { // Deep merge glassmorphismOptions
       ...DEFAULT_USER_SETTINGS.glassmorphismOptions,
-      ...baseSettings.glassmorphismOptions,
+      ...(baseSettings.glassmorphismOptions || {}), // Override with user's specific glass options
     },
-    notifications: {
+    notifications: { // Deep merge notifications
       ...DEFAULT_USER_SETTINGS.notifications,
-      ...baseSettings.notifications,
+      ...(baseSettings.notifications || {}),
     },
-    privacy: {
+    privacy: { // Deep merge privacy
       ...DEFAULT_USER_SETTINGS.privacy,
-      ...baseSettings.privacy,
+      ...(baseSettings.privacy || {}),
     },
   };
   
@@ -368,4 +371,3 @@ export const useAuthSettings = () => {
     loading: context.loading,
   };
 };
-

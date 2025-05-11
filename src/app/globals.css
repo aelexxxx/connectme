@@ -54,17 +54,27 @@ body {
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
 
-    /* Glassmorphism Defaults - Light Mode */
-    --glass-color-one-light: 220 80% 95% / 0.4; /* Light, translucent frosty blue */
-    --glass-color-two-light: 210 70% 97% / 0.35; /* Lighter, translucent frosty white-blue */
-    --glass-border-color-light: 220 30% 70% / 0.5; /* Light border */
-    --glass-shadow-light: 0 6px 24px 0 rgba(0, 0, 0, 0.1); /* Softer shadow for light */
-    --glass-text-color-light: hsl(240 10% 3.9%);
-    --glass-blur-intensity-light: 10px; /* Default blur for light */
+    /* Glassmorphism Base Values - For Light Glass Panes */
+    --glass-color-one-light-raw: 220 80% 95%; /* Used for HSLA construction */
+    --glass-color-two-light-raw: 210 70% 97%; /* Used for HSLA construction */
+    --glass-opacity-light: 0.4; /* Opacity for light glass panes */
+    --glass-border-color-light: 220 30% 70% / 0.5; /* Light border for glass panes */
+    --glass-shadow-light: 0 6px 24px 0 rgba(0, 0, 0, 0.1); /* Softer shadow for light glass panes */
+    --glass-text-color-light: hsl(240 10% 3.9%); /* Dark text for light glass panes */
+    --glass-blur-intensity-light: 10px; /* Default blur for light glass panes */
 
-    /* Dynamic vars to be set by JS, defaulting to light mode glass vars */
-    --dynamic-glass-color-one: hsl(var(--glass-color-one-light));
-    --dynamic-glass-color-two: hsl(var(--glass-color-two-light));
+    /* Glassmorphism Base Values - For Dark Glass Panes */
+    --glass-color-one-dark-raw: 245 30% 18%; /* Used for HSLA construction */
+    --glass-color-two-dark-raw: 235 35% 20%; /* Used for HSLA construction */
+    --glass-opacity-dark: 0.35; /* Opacity for dark glass panes */
+    --glass-border-color-dark: 240 20% 50% / 0.25; /* Brighter, translucent border for dark glass panes */
+    --glass-shadow-dark: 0 10px 40px 0 rgba(0, 0, 0, 0.55); /* Adjusted shadow for dark glass panes */
+    --glass-text-color-dark: hsl(0 0% 95%); /* Light text for dark glass panes */
+    --glass-blur-intensity-dark: 12px; /* Default blur for dark glass panes */
+    
+    /* Dynamic vars to be set by JS, these will be HSLA values after processing */
+    --dynamic-glass-color-one: hsla(var(--glass-color-one-light-raw), var(--glass-opacity-light));
+    --dynamic-glass-color-two: hsla(var(--glass-color-two-light-raw), var(--glass-opacity-light));
     --dynamic-glass-blur: var(--glass-blur-intensity-light);
     --dynamic-glass-border-color: hsl(var(--glass-border-color-light));
     --dynamic-glass-shadow: var(--glass-shadow-light);
@@ -117,61 +127,58 @@ body {
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
 
-    /* Glassmorphism Defaults - Dark Mode */
-    --glass-color-one-dark: 245 30% 18% / 0.35; /* hsla(245, 30%, 18%, 0.35) */
-    --glass-color-two-dark: 235 35% 20% / 0.3;  /* hsla(235, 35%, 20%, 0.3) */
-    --glass-border-color-dark: 240 20% 50% / 0.25; /* Brighter, translucent border */
-    --glass-shadow-dark: 0 10px 40px 0 rgba(0, 0, 0, 0.55); /* Adjusted shadow */
-    --glass-text-color-dark: hsl(0 0% 95%);
-    --glass-blur-intensity-dark: 12px; /* Default blur for dark */
+    /* When dark mode is active, set dynamic glass vars to dark defaults */
+    --dynamic-glass-color-one: hsla(var(--glass-color-one-dark-raw), var(--glass-opacity-dark));
+    --dynamic-glass-color-two: hsla(var(--glass-color-two-dark-raw), var(--glass-opacity-dark));
+    --dynamic-glass-border-color: hsl(var(--glass-border-color-dark));
+    --dynamic-glass-shadow: var(--glass-shadow-dark);
+    --dynamic-glass-text-color: var(--glass-text-color-dark);
+    --dynamic-glass-blur: var(--glass-blur-intensity-dark);
   }
 
   .theme-glassmorphism {
-    /* Main page background gradient for glassmorphism theme - now always dark */
+    /* Main page background gradient for glassmorphism theme - always darkish */
     background-image: linear-gradient(145deg, hsl(260, 50%, 10%), hsl(230, 40%, 15%));
     background-attachment: fixed;
     background-size: cover;
     
-    /* Redefine component vars for glassmorphism */
+    /* Redefine component base colors to be transparent for glass effect */
+    --background: transparent; /* So page itself is the gradient */
     --card: transparent; 
     --popover: transparent;
     
-    /* These are the properties that glass surfaces will use */
-    --glass-surface-background-image: linear-gradient(135deg, var(--dynamic-glass-color-one), var(--dynamic-glass-color-two));
-    --glass-surface-backdrop-filter: blur(var(--dynamic-glass-blur));
-    --glass-surface-webkit-backdrop-filter: blur(var(--dynamic-glass-blur));
-    --glass-surface-border: 1px solid var(--dynamic-glass-border-color);
-    --glass-surface-box-shadow: var(--dynamic-glass-shadow);
-    --glass-surface-border-radius: var(--radius);
-    --glass-surface-text-color: var(--dynamic-glass-text-color);
-
-    --card-foreground: var(--dynamic-glass-text-color);
-    --popover-foreground: var(--dynamic-glass-text-color);
-    --muted-foreground: color-mix(in srgb, var(--dynamic-glass-text-color) 60%, transparent);
+    /* Default text color on the glassmorphism page background (not on glass panes) */
+    /* If active scheme is dark, use light text. If light, use dark text. */
+    /* This is for general text on the page. Glass panes will use --dynamic-glass-text-color */
+    --foreground: hsl(0 0% 95%); /* Default to light text for dark page bg */
   }
   
-  .theme-glassmorphism.dark {
-      /* Dark mode page background gradient is now inherited from .theme-glassmorphism */
-      /* background-image: linear-gradient(145deg, hsl(260, 50%, 10%), hsl(230, 40%, 15%)); */
-      
-      /* Set dynamic variables for dark mode glass elements */
-      --dynamic-glass-color-one: hsl(var(--glass-color-one-dark));
-      --dynamic-glass-color-two: hsl(var(--glass-color-two-dark));
-      --dynamic-glass-border-color: hsl(var(--glass-border-color-dark));
-      --dynamic-glass-shadow: var(--glass-shadow-dark);
-      --dynamic-glass-text-color: var(--glass-text-color-dark);
-      --dynamic-glass-blur: var(--glass-blur-intensity-dark);
-  }
-
   .theme-glassmorphism:not(.dark) {
-      /* Set dynamic variables for light mode glass elements (on a dark page background) */
-      --dynamic-glass-color-one: hsl(var(--glass-color-one-light));
-      --dynamic-glass-color-two: hsl(var(--glass-color-two-light));
+      /* If overall color scheme is light, but glassmorphism is active (dark page bg) */
+      /* Glass panes will use light-pane defaults */
+      --dynamic-glass-color-one: hsla(var(--glass-color-one-light-raw), var(--glass-opacity-light));
+      --dynamic-glass-color-two: hsla(var(--glass-color-two-light-raw), var(--glass-opacity-light));
       --dynamic-glass-border-color: hsl(var(--glass-border-color-light));
       --dynamic-glass-shadow: var(--glass-shadow-light);
-      --dynamic-glass-text-color: var(--glass-text-color-light); /* This is dark text, good for light glass panes */
+      --dynamic-glass-text-color: var(--glass-text-color-light); /* Dark text on light panes */
       --dynamic-glass-blur: var(--glass-blur-intensity-light);
+      --foreground: hsl(240 10% 3.9%); /* General text on dark page, if panes are light */
+       --muted-foreground: color-mix(in srgb, var(--glass-text-color-light) 60%, transparent);
   }
+
+  .theme-glassmorphism.dark {
+      /* If overall color scheme is dark and glassmorphism is active */
+      /* Glass panes will use dark-pane defaults */
+      --dynamic-glass-color-one: hsla(var(--glass-color-one-dark-raw), var(--glass-opacity-dark));
+      --dynamic-glass-color-two: hsla(var(--glass-color-two-dark-raw), var(--glass-opacity-dark));
+      --dynamic-glass-border-color: hsl(var(--glass-border-color-dark));
+      --dynamic-glass-shadow: var(--glass-shadow-dark);
+      --dynamic-glass-text-color: var(--glass-text-color-dark); /* Light text on dark panes */
+      --dynamic-glass-blur: var(--glass-blur-intensity-dark);
+      --foreground: hsl(0 0% 95%); /* General text on dark page, if panes are also dark */
+      --muted-foreground: color-mix(in srgb, var(--dynamic-glass-text-color) 60%, transparent);
+  }
+
 
   @keyframes flowing-gradient {
     0% { background-position: 0% 0%; }
@@ -180,21 +187,21 @@ body {
   }
 }
 
-/* Define glass effect properties outside of layers or in @layer utilities */
+/* Define glass effect properties */
 .apply-glass-effect {
-  background-image: var(--glass-surface-background-image) !important;
-  background-color: transparent !important; /* Override explicit bg-card etc. */
-  backdrop-filter: var(--glass-surface-backdrop-filter) !important;
-  -webkit-backdrop-filter: var(--glass-surface-webkit-backdrop-filter) !important;
-  border: var(--glass-surface-border) !important;
-  box-shadow: var(--glass-surface-box-shadow) !important;
-  border-radius: var(--glass-surface-border-radius) !important;
-  color: var(--glass-surface-text-color) !important;
+  background-image: linear-gradient(135deg, var(--dynamic-glass-color-one), var(--dynamic-glass-color-two)) !important;
+  background-color: transparent !important; 
+  backdrop-filter: blur(var(--dynamic-glass-blur)) !important;
+  -webkit-backdrop-filter: blur(var(--dynamic-glass-blur)) !important;
+  border: 1px solid var(--dynamic-glass-border-color) !important;
+  box-shadow: var(--dynamic-glass-shadow) !important;
+  border-radius: var(--radius) !important;
+  color: var(--dynamic-glass-text-color) !important;
 }
 
 .apply-glass-animation {
   animation: flowing-gradient 20s linear infinite;
-  background-size: 300% 300% !important; /* Needs to be larger for animation */
+  background-size: 300% 300% !important;
 }
 
 
@@ -205,11 +212,15 @@ body {
   body {
     @apply bg-background text-foreground;
   }
-  /* Ensure body also gets the gradient when theme is active */
+  /* Ensure html/body also gets the gradient when theme is active */
+ .theme-glassmorphism {
+     background-image: linear-gradient(145deg, hsl(260, 50%, 10%), hsl(230, 40%, 15%));
+     background-attachment: fixed;
+     background-size: cover;
+  }
   .theme-glassmorphism body {
-     background-image: inherit; /* Inherit from html element */
-     background-attachment: inherit;
-     background-size: inherit;
+     background-color: transparent; /* Body itself should be transparent to show html's gradient */
+     color: var(--foreground); /* Use the theme-glassmorphism adjusted foreground */
   }
 }
 
@@ -218,39 +229,39 @@ body {
 @layer components {
   .theme-glassmorphism {
     /* Card: Targets the div from Card component in ui/card.tsx */
-    .rounded-lg.border.bg-card.text-card-foreground.shadow-sm {
+    .rounded-lg.border.bg-card.text-card-foreground.shadow-sm, /* Default Card style */
+    .bg-card { /* General bg-card usage */
       @apply apply-glass-effect;
     }
 
     /* PopoverContent: Targets content part of Popover and fallbacks */
     [data-radix-popper-content-wrapper] > .z-50.w-72.rounded-md.border.bg-popover.p-4.text-popover-foreground.shadow-md,
     .bg-popover[role="dialog"], .bg-popover[data-state="open"],
-    .bg-popover.text-popover-foreground.shadow-md { /* Covers dropdowns/selects that might use these classes */
-        &:not(:where(.dummy-selector-to-lower-specificity)) { /* Scoping to avoid over-applying to non-target popovers */
+    .bg-popover.text-popover-foreground.shadow-md { 
+        &:not(:where(.dummy-selector-to-lower-specificity)) { 
              @apply apply-glass-effect;
         }
     }
-
-    /* DialogContent: Targets content part of Dialog and fallbacks */
-    /* Specific selector for default DialogContent style */
-    .fixed.left-\[50\%\].top-\[50\%\].z-50.grid.w-full.max-w-lg.translate-x-\[-50\%\].translate-y-\[-50\%\].gap-4.border.bg-background.p-6.shadow-lg.sm\:rounded-lg[role="dialog"],
-    /* General fallback for Dialogs/AlertDialogs using bg-background */
-    .bg-background[role="alertdialog"], .bg-background[role="dialog"] {
-       &:not(:where(.dummy-selector-to-lower-specificity)) { /* Scoping */
-            @apply apply-glass-effect;
-       }
+    /* Ensure popover foreground text color is correct */
+    .bg-popover.text-popover-foreground, [data-radix-popper-content-wrapper] > .text-popover-foreground {
+        color: var(--dynamic-glass-text-color) !important;
     }
 
-    /* SheetContent: Targets content part of Sheet */
-    /* Specific selector for default SheetContent style */
-    .fixed.z-50.gap-4.bg-background.p-6.shadow-lg {
-      @apply apply-glass-effect;
+
+    /* DialogContent: Targets content part of Dialog and fallbacks */
+    .fixed.left-\[50\%\].top-\[50\%\].z-50.grid.w-full.max-w-lg.translate-x-\[-50\%\].translate-y-\[-50\%\].gap-4.border.bg-background.p-6.shadow-lg.sm\:rounded-lg[role="dialog"],
+    /* SheetContent (often uses bg-background) & general Dialogs/AlertDialogs using bg-background */
+    .bg-background[role="alertdialog"], .bg-background[role="dialog"],
+    .fixed.z-50.gap-4.bg-background.p-6.shadow-lg { /* SheetContent */
+       &:not(:where(.dummy-selector-to-lower-specificity)) { 
+            @apply apply-glass-effect;
+       }
     }
     
     /* App Header (from AppLayout - sticky top-0 ... bg-card ) */
     header.sticky.bg-card {
       @apply apply-glass-effect;
-      border-radius: 0 !important; /* Headers typically aren't rounded */
+      border-radius: 0 !important; 
     }
 
     /* App Footer (from AppLayout - py-4 ... border-t) */
@@ -270,10 +281,17 @@ body {
     [data-radix-dropdown-menu-content] {
         @apply apply-glass-effect;
     }
+    [data-radix-select-content] .text-popover-foreground,
+    [data-radix-dropdown-menu-content] .text-popover-foreground {
+        color: var(--dynamic-glass-text-color) !important;
+    }
+
 
     /* Adjust input fields on glassmorphism theme for better visibility */
     input, textarea, select, .bg-input,
-    .bg-background input, .bg-background textarea, .bg-background select {
+    .bg-background input, .bg-background textarea, .bg-background select,
+    /* ShadCN form input specifically */
+    .border.border-input.bg-background {
         background-color: color-mix(in srgb, var(--dynamic-glass-border-color) 20%, transparent) !important;
         border-color: color-mix(in srgb, var(--dynamic-glass-border-color) 70%, transparent) !important;
         color: var(--dynamic-glass-text-color) !important;
@@ -284,7 +302,7 @@ body {
     
     /* Primary button (bg-primary) uses CSS variables and should adapt well, but ensure text is readable */
     .bg-primary {
-        color: var(--primary-foreground) !important; /* Ensure primary button text is always its foreground color */
+        color: var(--primary-foreground) !important; 
     }
     .bg-accent {
         color: var(--accent-foreground) !important;
@@ -297,25 +315,66 @@ body {
         border-color: var(--dynamic-glass-text-color) !important;
         color: var(--dynamic-glass-text-color) !important;
     }
-    /* Hover state for the outline button in glassmorphism */
     .border.border-input.bg-background.hover\:bg-accent.hover\:text-accent-foreground:hover,
     button[variant="outline"]:hover {
         background-color: color-mix(in srgb, var(--dynamic-glass-text-color) 15%, transparent) !important;
         border-color: var(--dynamic-glass-text-color) !important;
         color: var(--dynamic-glass-text-color) !important; 
     }
+
+    /* Muted text on glass backgrounds */
+    .text-muted-foreground {
+      color: color-mix(in srgb, var(--dynamic-glass-text-color) 70%, transparent) !important;
+    }
+    .text-sm.text-muted-foreground { /* More specific for descriptions */
+      color: color-mix(in srgb, var(--dynamic-glass-text-color) 70%, transparent) !important;
+    }
+    .text-xs.text-muted-foreground {
+       color: color-mix(in srgb, var(--dynamic-glass-text-color) 60%, transparent) !important;
+    }
+
+     /* RadioGroup items and Switch */
+    .border-primary[data-state="checked"] {
+        /* Ensure these maintain their primary color look against glass */
+        /* Default Tailwind border-primary should be fine if --primary is well-defined */
+    }
+    .border-input {
+        /* Default state for switches etc. on glass */
+        background-color: color-mix(in srgb, var(--dynamic-glass-border-color) 20%, transparent) !important;
+        border-color: color-mix(in srgb, var(--dynamic-glass-border-color) 70%, transparent) !important;
+    }
+     /* Styling for the ::before pseudo-element used by Tailwind for data-[state=checked]:bg-primary often */
+    [data-state="checked"] {
+      /* This ensures that elements that get a primary background when checked (like Switch) 
+         use the --primary color for their background and --primary-foreground for their text/icon if applicable.
+         The .bg-primary rule above already handles text color for elements with .bg-primary class.
+         This rule is more about ensuring the background itself is from --primary.
+         ShadCN components typically use Tailwind utilities like `data-[state=checked]:bg-primary` which
+         translate to CSS that uses `hsl(var(--primary))`. So this might be redundant if components behave.
+      */
+    }
+    [data-state="unchecked"].bg-input {
+         background-color: color-mix(in srgb, var(--dynamic-glass-border-color) 20%, transparent) !important;
+         border-color: color-mix(in srgb, var(--dynamic-glass-border-color) 70%, transparent) !important;
+    }
+
+    .bg-popover.p-4.hover\:bg-accent:hover {
+        background-color: color-mix(in srgb, var(--dynamic-glass-text-color) 10%, transparent) !important;
+    }
+
   }
 
   /* Apply animation conditionally */
   .theme-glassmorphism.animate-gradient {
-    /* Selectors that should have the animation when glass effect is active */
+    .apply-glass-effect, /* Apply animation to all elements that have glass effect */
     .rounded-lg.border.bg-card.text-card-foreground.shadow-sm,
+    .bg-card,
     [data-radix-popper-content-wrapper] > .z-50.w-72.rounded-md.border.bg-popover.p-4.text-popover-foreground.shadow-md,
     .bg-popover[role="dialog"]:not(:where(.dummy-selector-to-lower-specificity)), .bg-popover[data-state="open"]:not(:where(.dummy-selector-to-lower-specificity)),
     .bg-popover.text-popover-foreground.shadow-md:not(:where(.dummy-selector-to-lower-specificity)),
     .fixed.left-\[50\%\].top-\[50\%\].z-50.grid.w-full.max-w-lg.translate-x-\[-50\%\].translate-y-\[-50\%\].gap-4.border.bg-background.p-6.shadow-lg.sm\:rounded-lg[role="dialog"],
     .bg-background[role="alertdialog"]:not(:where(.dummy-selector-to-lower-specificity)), .bg-background[role="dialog"]:not(:where(.dummy-selector-to-lower-specificity)),
-    .fixed.z-50.gap-4.bg-background.p-6.shadow-lg,
+    .fixed.z-50.gap-4.bg-background.p-6.shadow-lg, /* SheetContent */
     header.sticky.bg-card,
     footer.border-t,
     nav.fixed.bottom-0.bg-card,
