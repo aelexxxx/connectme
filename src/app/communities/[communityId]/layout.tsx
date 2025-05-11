@@ -44,8 +44,8 @@ export default function CommunityLayout({
           <Image
             src={`https://picsum.photos/seed/${community.imageSeed}-banner/1200/400`}
             alt={`${community.name} banner`}
-            fill // Changed from layout="fill"
-            style={{objectFit: 'cover'}} // Changed from objectFit="cover"
+            fill 
+            style={{objectFit: 'cover'}} 
             data-ai-hint="community event photo"
             priority
           />

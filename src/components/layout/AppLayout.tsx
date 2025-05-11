@@ -85,69 +85,79 @@ export default function AppLayout({ children }: AppLayoutProps) {
     const pathSegments = pathname.split('/').filter(Boolean);
     const breadcrumbs: BreadcrumbItem[] = [];
 
+    if (pathSegments.length === 0 && pathname === '/') { // Root path
+        if (staticPageDetails['/dashboard']) {
+            breadcrumbs.push({ ...staticPageDetails['/dashboard'], type: 'link' });
+        }
+        return breadcrumbs;
+    }
+    
     if (pathSegments.length > 0) {
         const firstSegmentKey = `/${pathSegments[0]}`;
 
-        if (staticPageDetails[firstSegmentKey]) {
-            breadcrumbs.push({ ...staticPageDetails[firstSegmentKey], type: 'link' });
-        } else {
-            breadcrumbs.push({ 
-                name: pathSegments[0].charAt(0).toUpperCase() + pathSegments[0].slice(1), 
-                href: firstSegmentKey, 
-                icon: <Package className="h-5 w-5" />,
-                type: 'link' 
-            });
-        }
-
         if (pathSegments[0] === 'communities') {
+            // 1. Add "Communities" itself
+            breadcrumbs.push({ ...staticPageDetails['/communities'], type: 'link' });
+
             if (pathSegments.length === 1) { // On /communities page
                 const currentTab = searchParams.get('tab') || 'your-communities';
                 const tabDetail = communityPageTabsDetails[currentTab] || communityPageTabsDetails['your-communities'];
+                // This is a special item that renders as a dropdown trigger AND the active tab name
                 breadcrumbs.push({
                     type: 'tabSelector',
                     activeTabName: tabDetail.name,
                     activeTabIcon: React.cloneElement(tabDetail.icon, { className: "h-5 w-5 text-foreground"}),
                 });
-            } else if (pathSegments.length > 1) { // On /communities/[communityId] or deeper
+            } else if (pathSegments.length >= 2) { // On /communities/[communityId] or deeper
                 const communityId = pathSegments[1];
                 const community = getCommunityById(communityId);
 
+                // Determine parent tab ("Your Communities" or "Discover")
+                const userCommunityIdsForDemo = mockCommunities.slice(0, 2).map(c => c.id); // Example: first 2 are user's
+                const isUserCommunity = community ? userCommunityIdsForDemo.includes(community.id) : false;
+                const parentTabKey = isUserCommunity ? 'your-communities' : 'discover';
+                const parentTabDetail = communityPageTabsDetails[parentTabKey];
+                
+                // 2. Add "Your Communities" or "Discover & Features"
+                if (parentTabDetail) {
+                    breadcrumbs.push({ 
+                        name: parentTabDetail.name, 
+                        href: `/communities?tab=${parentTabDetail.hrefPart}`, 
+                        icon: React.cloneElement(parentTabDetail.icon, {className: "h-5 w-5"}), 
+                        type: 'link' 
+                    });
+                }
+                
+                // 3. Add Community Name
                 if (community) {
-                    const userCommunityIdsForDemo = mockCommunities.length > 0 ? [mockCommunities[0].id, ...(mockCommunities.length > 1 ? [mockCommunities[1].id] : [])] : [];
-                    const isUserCommunity = userCommunityIdsForDemo.includes(community.id);
-
-                    // Determine the base tab for this community (Your Communities or Discover)
-                    const baseTabKey = isUserCommunity ? 'your-communities' : 'discover'; // Default to 'discover' if not in user's list
-                    const baseTabDetail = communityPageTabsDetails[baseTabKey];
+                    breadcrumbs.push({ name: community.name, href: `/communities/${community.id}`, type: 'link' }); // No icon for community name
                     
-                    if (baseTabDetail) {
-                        breadcrumbs.push({ 
-                            name: baseTabDetail.name, 
-                            href: `/communities?tab=${baseTabDetail.hrefPart}`, 
-                            icon: React.cloneElement(baseTabDetail.icon, {className: "h-5 w-5"}), 
-                            type: 'link' 
-                        });
-                    }
-                    
-                    breadcrumbs.push({ name: community.name, href: `/communities/${community.id}`, type: 'link' }); // Community name, no icon
-                    
+                    // 4. Add SubPage Name (if exists)
                     if (pathSegments.length > 2) { 
                         const subPageId = pathSegments[2];
                         const subPage = getSubPageById(community.id, subPageId);
                         if (subPage) {
-                            breadcrumbs.push({ name: subPage.name, href: `/communities/${community.id}/${subPage.id}`, type: 'link' }); // SubPage name, no icon
+                            breadcrumbs.push({ name: subPage.name, href: `/communities/${community.id}/${subPage.id}`, type: 'link' }); // No icon for subpage
                         } else {
+                             // Fallback for unknown subpage
                             breadcrumbs.push({ name: subPageId.charAt(0).toUpperCase() + subPageId.slice(1), href: `/communities/${community.id}/${subPageId}`, type: 'link' });
                         }
                     }
                 } else {
+                    // Fallback for unknown community
                     breadcrumbs.push({ name: communityId.charAt(0).toUpperCase() + communityId.slice(1), href: `/communities/${communityId}`, type: 'link' });
                 }
             }
-        }
-    } else if (pathname === '/') { // Handle root path explicitly if it should default to Dashboard breadcrumb
-        if (staticPageDetails['/dashboard']) {
-            breadcrumbs.push({ ...staticPageDetails['/dashboard'], type: 'link' });
+        } else if (staticPageDetails[firstSegmentKey]) { // For other static pages like /dashboard, /profile etc.
+            breadcrumbs.push({ ...staticPageDetails[firstSegmentKey], type: 'link' });
+            // Potentially add logic for sub-paths of other sections if they exist
+        } else { // Fallback for unknown top-level paths
+            breadcrumbs.push({ 
+                name: pathSegments[0].charAt(0).toUpperCase() + pathSegments[0].slice(1), 
+                href: firstSegmentKey, 
+                icon: <Package className="h-5 w-5" />, // Generic icon
+                type: 'link' 
+            });
         }
     }
     return breadcrumbs;
@@ -164,8 +174,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
       </div>
     );
   }
+  
+  const isCommunityPage = pathname.startsWith('/communities');
+  // Check if it's a specific community page or sub-page (e.g., /communities/xyz or /communities/xyz/abc)
+  const isSpecificCommunityPage = isCommunityPage && pathname.split('/').length > 2;
+  // Only show main horizontal tabs if not on a specific community page (where sub-page tabs take precedence)
+  const showHorizontalTabs = layoutMode === 'horizontal' && !isSpecificCommunityPage;
 
-  const hasPageSpecificTabs = pathname.startsWith('/communities') && pathname.split('/').length > 2; 
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
@@ -200,6 +215,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               const key = item.type === 'tabSelector' ? `breadcrumb-tab-selector-${index}` : `${(item as LinkBreadcrumbItem).href}-${index}`;
               const isLastItem = index === breadcrumbItems.length - 1;
 
+              // If item is the TabSelector for /communities page
               if (item.type === 'tabSelector') {
                 return (
                   <React.Fragment key={key}>
@@ -221,6 +237,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                         ))}
                       </DropdownMenuContent>
                     </DropdownMenu>
+                    {/* Render the active tab name and icon */}
                     {React.cloneElement(item.activeTabIcon, {className: "h-5 w-5 text-foreground flex-shrink-0"})}
                     <span className="text-foreground font-medium truncate max-w-[100px] sm:max-w-[150px] md:max-w-[200px]" title={item.activeTabName}>
                       {item.activeTabName}
@@ -229,11 +246,39 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 );
               }
               
-              // Type assertion for LinkBreadcrumbItem
               const linkItem = item as LinkBreadcrumbItem;
+              // Determine if this link item is the "Communities" main link when on a specific community path
+              const isCommunitiesMainLink = linkItem.href === '/communities' && index === 0 && pathSegments[0] === 'communities' && pathSegments.length > 1;
+
               return (
                 <React.Fragment key={key}>
-                  {index > 0 && <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />}
+                  {/* Render ChevronRight conditionally */}
+                  {index > 0 && !isCommunitiesMainLink && ( // Regular static chevron for subsequent items, unless it's handled by a specific dropdown logic below
+                     <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                  )}
+
+                  {/* Special Dropdown for "Your Communities" / "Discover" when navigating within a specific community */}
+                  {isCommunitiesMainLink && breadcrumbItems[index+1]?.href?.startsWith('/communities?tab=') && (
+                     <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 flex-shrink-0">
+                          <ChevronRight className="h-5 w-5" />
+                          <span className="sr-only">Select community section</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start">
+                        <DropdownMenuLabel>Community Sections</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {Object.values(communityPageTabsDetails).map(tabDetail => (
+                          <DropdownMenuItem key={tabDetail.hrefPart} onClick={() => router.push(`/communities?tab=${tabDetail.hrefPart}`)} className="cursor-pointer">
+                            {React.cloneElement(tabDetail.icon, { className: "mr-2 h-4 w-4" })}
+                            <span>{tabDetail.name}</span>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                  
                   <Link href={linkItem.href} className="flex items-center gap-1 hover:underline flex-shrink-0" title={linkItem.name}>
                     {linkItem.icon && React.cloneElement(linkItem.icon, { className: "h-5 w-5 text-foreground flex-shrink-0" })}
                     <span className={`${isLastItem ? 'text-foreground font-medium' : 'text-muted-foreground text-sm'} truncate max-w-[100px] sm:max-w-[150px] md:max-w-[200px]`}>
@@ -243,6 +288,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 </React.Fragment>
               );
             })}
+            {/* Fallback if breadcrumbs are empty but not on root page */}
             {breadcrumbItems.length === 0 && pathname !== '/' && ( 
                  <div className="flex items-center gap-1">
                      <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
@@ -311,8 +357,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </div>
       </header>
       
-      {layoutMode === 'horizontal' && !hasPageSpecificTabs && (
-        <Tabs value={pathname.startsWith('/communities') ? '/communities' : pathname} className="sticky top-16 z-20 w-full border-b bg-background/90 backdrop-blur-sm">
+      {showHorizontalTabs && ( // Logic updated to use showHorizontalTabs
+        <Tabs value={isCommunityPage ? '/communities' : pathname} className="sticky top-16 z-20 w-full border-b bg-background/90 backdrop-blur-sm">
           <TabsList className="grid w-full grid-cols-5 h-auto">
             {Object.values(staticPageDetails).map(page => (
               <TabsTrigger key={page.href} value={page.href} asChild className="flex-shrink-0 data-[state=active]:shadow-lg data-[state=active]:bg-card">
@@ -326,7 +372,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </Tabs>
       )}
 
-      <main className={`flex-1 p-4 sm:p-6 md:p-8 ${layoutMode === 'stacked' || (layoutMode === 'horizontal' && (isGuest || hasPageSpecificTabs)) ? 'pb-20 md:pb-8' : 'pb-8'}`}>
+      <main className={`flex-1 p-4 sm:p-6 md:p-8 ${layoutMode === 'stacked' || (layoutMode === 'horizontal' && (isGuest || isSpecificCommunityPage)) ? 'pb-20 md:pb-8' : 'pb-8'}`}>
         <div className="mx-auto max-w-6xl space-y-6">
          {children}
         </div>
@@ -335,7 +381,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         © {new Date().getFullYear()} ConnectMe. All rights reserved.
       </footer>
 
-      {(layoutMode === 'stacked' || (layoutMode === 'horizontal' && (isGuest || hasPageSpecificTabs ))) && (
+      {(layoutMode === 'stacked' || (layoutMode === 'horizontal' && (isGuest || isSpecificCommunityPage ))) && (
         <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card p-1 shadow-[0_-2px_5px_-1px_rgba(0,0,0,0.1)] md:hidden">
           <div className="grid grid-cols-4 gap-1">
             {mobileNavItems.map((item) => (
@@ -356,4 +402,3 @@ export default function AppLayout({ children }: AppLayoutProps) {
     </div>
   );
 }
-
