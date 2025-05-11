@@ -110,8 +110,8 @@ export default function CommunitiesPage() {
                                 <Image 
                                     src={`https://picsum.photos/seed/${community.imageSeed}/400/200`} 
                                     alt={community.name} 
-                                    layout="fill" 
-                                    objectFit="cover"
+                                    fill
+                                    style={{objectFit: 'cover'}}
                                     data-ai-hint="community banner"
                                     />
                             </div>
@@ -171,8 +171,8 @@ export default function CommunitiesPage() {
                                         <Image 
                                             src={`https://picsum.photos/seed/${community.imageSeed}/400/200`} 
                                             alt={community.name} 
-                                            layout="fill" 
-                                            objectFit="cover"
+                                            fill
+                                            style={{objectFit: 'cover'}}
                                             data-ai-hint="community group photo"
                                             />
                                     </div>
@@ -184,7 +184,9 @@ export default function CommunitiesPage() {
                                         <p className="text-sm text-muted-foreground line-clamp-3">{community.description}</p>
                                     </CardContent>
                                     <CardFooter className="pt-3">
-                                        <Button size="sm" className="w-full bg-accent hover:bg-accent/80 text-accent-foreground">Join Community</Button>
+                                        <Button asChild size="sm" className="w-full bg-accent hover:bg-accent/80 text-accent-foreground">
+                                          <Link href={`/communities/${community.id}`}>View Community</Link>
+                                        </Button>
                                     </CardFooter>
                                 </Card>
                             ))}
