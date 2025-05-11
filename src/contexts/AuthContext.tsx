@@ -16,6 +16,20 @@ export interface BlogPost {
   content: string;
   date: string;
 }
+
+export interface UserSettings {
+  theme: 'light' | 'dark' | 'system';
+  notifications: {
+    newConnectionEmail: boolean;
+    activityUpdateEmail: boolean;
+    inAppNotifications: boolean;
+  };
+  privacy: {
+    allowProfileSuggestions: boolean;
+    profileDiscoverable: boolean; // e.g. by search engines, public listing
+  };
+}
+
 export interface User {
   id: string;
   name: string;
@@ -25,16 +39,19 @@ export interface User {
   status?: string;
   socialLinks?: SocialLink[];
   blogPosts?: BlogPost[];
+  settings?: UserSettings;
 }
 
 interface AuthContextType {
   user: User | null;
   isGuest: boolean;
-  login: (email: string, name?:string) => void; // Simplified login
-  signup: (name: string, email: string) => void; // Simplified signup
+  login: (email: string, name?:string) => void;
+  signup: (name: string, email: string) => void;
   logout: () => void;
   enterGuestMode: () => void;
   updateProfile: (updatedData: Partial<Omit<User, 'id' | 'email'>>) => void;
+  updateUserSettings: (updatedSettings: Partial<UserSettings>) => void;
+  deleteAccount: () => void;
   addBlogPost: (post: { title: string; content: string }) => void;
   updateBlogPost: (postId: string, updatedPost: Partial<Omit<BlogPost, 'id' | 'date'>>) => void;
   deleteBlogPost: (postId: string) => void;
@@ -45,6 +62,19 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const DEFAULT_USER_SETTINGS: UserSettings = {
+  theme: 'system',
+  notifications: {
+    newConnectionEmail: true,
+    activityUpdateEmail: true,
+    inAppNotifications: true,
+  },
+  privacy: {
+    allowProfileSuggestions: true,
+    profileDiscoverable: true,
+  },
+};
 
 const MOCK_USER_BASE: Omit<User, 'id' | 'email' | 'name'> = {
   photoUrl: 'https://picsum.photos/seed/profile/200/200',
@@ -57,6 +87,7 @@ const MOCK_USER_BASE: Omit<User, 'id' | 'email' | 'name'> = {
   blogPosts: [
     { id: 'bp1', title: 'Welcome to My ConnectMe Profile!', content: 'This is my first post, excited to share more soon.', date: new Date(Date.now() - 86400000 * 3).toISOString() },
   ],
+  settings: { ...DEFAULT_USER_SETTINGS },
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -70,7 +101,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const storedUser = localStorage.getItem('connectme-user');
     const storedGuest = localStorage.getItem('connectme-guest');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      const parsedUser = JSON.parse(storedUser);
+      // Ensure settings exist, merge with defaults if not fully present
+      parsedUser.settings = { ...DEFAULT_USER_SETTINGS, ...(parsedUser.settings || {}) };
+      setUser(parsedUser);
     } else if (storedGuest === 'true') {
       setIsGuest(true);
     }
@@ -85,8 +119,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
-  const login = (email: string, name: string = "Demo User") => {
-    const newUser: User = { ...MOCK_USER_BASE, id: email, email, name: name || email.split('@')[0] };
+  const login = (email: string, name?: string) => {
+    const baseName = name || email.split('@')[0];
+    const newUser: User = { 
+      ...MOCK_USER_BASE, 
+      id: email, 
+      email, 
+      name: baseName,
+      photoUrl: MOCK_USER_BASE.photoUrl?.replace('profile', baseName.toLowerCase().replace(/\s+/g, '_')) || `https://picsum.photos/seed/${baseName.toLowerCase().replace(/\s+/g, '_')}/200/200`,
+      settings: { ...DEFAULT_USER_SETTINGS } // Ensure fresh settings on new login
+    };
     setUser(newUser);
     setIsGuest(false);
     updateUserStorage(newUser);
@@ -95,7 +137,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signup = (name: string, email: string) => {
-    const newUser: User = { ...MOCK_USER_BASE, id: email, email, name };
+    const newUser: User = { 
+      ...MOCK_USER_BASE, 
+      id: email, 
+      email, 
+      name,
+      photoUrl: MOCK_USER_BASE.photoUrl?.replace('profile', name.toLowerCase().replace(/\s+/g, '_')) || `https://picsum.photos/seed/${name.toLowerCase().replace(/\s+/g, '_')}/200/200`,
+      settings: { ...DEFAULT_USER_SETTINGS } // Ensure fresh settings on new signup
+    };
     setUser(newUser);
     setIsGuest(false);
     updateUserStorage(newUser);
@@ -111,6 +160,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     router.push('/login');
   };
 
+  const deleteAccount = () => {
+    // In a real app, this would involve backend calls
+    logout(); // For mock, just log out
+  };
+
   const enterGuestMode = () => {
     setUser(null);
     setIsGuest(true);
@@ -121,11 +175,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const updateProfile = (updatedData: Partial<Omit<User, 'id' | 'email'>>) => {
     if (user) {
-      const newUser = { ...user, ...updatedData };
+      // Explicitly separate settings updates to avoid overwriting nested objects unintentionally
+      const { settings, ...otherData } = updatedData;
+      let newSettings = user.settings;
+      if (settings) {
+        newSettings = { ...(user.settings || DEFAULT_USER_SETTINGS), ...settings };
+      }
+      
+      const newUser = { ...user, ...otherData, settings: newSettings };
       setUser(newUser);
       updateUserStorage(newUser);
     }
   };
+
+  const updateUserSettings = (updatedSettings: Partial<UserSettings>) => {
+    if (user) {
+      const newSettings = {
+        ...(user.settings || DEFAULT_USER_SETTINGS), // Base on existing or default
+        ...updatedSettings, // Apply partial updates
+        notifications: { // Deep merge for nested objects
+          ...(user.settings?.notifications || DEFAULT_USER_SETTINGS.notifications),
+          ...updatedSettings.notifications,
+        },
+        privacy: {
+          ...(user.settings?.privacy || DEFAULT_USER_SETTINGS.privacy),
+          ...updatedSettings.privacy,
+        },
+      };
+      updateProfile({ settings: newSettings });
+    }
+  };
+
 
   const addBlogPost = (post: { title: string; content: string }) => {
     if (user) {
@@ -138,7 +218,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const updateBlogPost = (postId: string, updatedFields: Partial<Omit<BlogPost, 'id' | 'date'>>) => {
     if (user && user.blogPosts) {
       const updatedPosts = user.blogPosts.map(p => 
-        p.id === postId ? { ...p, ...updatedFields, date: p.date } : p // Keep original date unless explicitly changed
+        p.id === postId ? { ...p, ...updatedFields, date: p.date } : p
       );
       updateProfile({ blogPosts: updatedPosts });
     }
@@ -180,7 +260,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (loading) return;
 
     const publicPaths = ['/', '/login', '/signup'];
+    // Allow /settings only if logged in (not guest)
+    const guestForbiddenPaths = ['/settings'];
+
     const isPublicPath = publicPaths.some(publicPath => pathname === publicPath || (publicPath !== '/' && pathname.startsWith(publicPath + '/')));
+    const isGuestForbiddenPath = guestForbiddenPaths.some(path => pathname === path);
+
+    if (isGuest && isGuestForbiddenPath) {
+      router.push('/dashboard'); // Redirect guest from settings
+      return;
+    }
     
     const isAuthenticatedRoute = !isPublicPath;
     const isLoggedIn = !!user || isGuest;
@@ -194,8 +283,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider value={{ 
-        user, isGuest, login, signup, logout, enterGuestMode, 
-        updateProfile, addBlogPost, updateBlogPost, deleteBlogPost,
+        user, isGuest, login, signup, logout, enterGuestMode, deleteAccount,
+        updateProfile, updateUserSettings,
+        addBlogPost, updateBlogPost, deleteBlogPost,
         addSocialLink, updateSocialLink, deleteSocialLink,
         loading 
       }}>
@@ -210,4 +300,14 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
+};
+export const useAuthSettings = () => {
+  const context = useAuth();
+  return { 
+    settings: context.user?.settings || DEFAULT_USER_SETTINGS, 
+    updateUserSettings: context.updateUserSettings,
+    isGuest: context.isGuest,
+    user: context.user,
+    deleteAccount: context.deleteAccount,
+  };
 };

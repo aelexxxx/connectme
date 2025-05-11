@@ -79,7 +79,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                   <Avatar className="h-9 w-9">
                     <AvatarImage 
-                      src={isGuest ? `https://picsum.photos/seed/guest/32/32` : user?.photoUrl || `https://picsum.photos/seed/${user?.name}/32/32`} 
+                      src={isGuest ? `https://picsum.photos/seed/guest/32/32` : user?.photoUrl || `https://picsum.photos/seed/${user?.name?.toLowerCase().replace(/\s+/g, '_') || 'user'}/32/32`} 
                       alt={user?.name || 'Guest'}
                       data-ai-hint="user avatar" />
                     <AvatarFallback>{isGuest ? 'G' : user?.name?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
@@ -101,17 +101,25 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {!isGuest && (
-                  <DropdownMenuItem onClick={() => router.push('/profile')}>
-                    <UserCircle className="mr-2 h-4 w-4" />
-                    My Profile
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem onClick={() => router.push('/profile')}>
+                      <UserCircle className="mr-2 h-4 w-4" />
+                      My Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push('/settings')}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      Settings
+                    </DropdownMenuItem>
+                  </>
                 )}
-                {/* <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  Settings
-                </DropdownMenuItem> */}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/50">
+                {isGuest && (
+                    <DropdownMenuItem onClick={() => router.push('/login')}>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Login/Sign Up
+                    </DropdownMenuItem>
+                )}
+                {!isGuest && <DropdownMenuSeparator />}
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/50 dark:text-red-500 dark:focus:text-red-400">
                   <LogOut className="mr-2 h-4 w-4" />
                   Logout
                 </DropdownMenuItem>
@@ -151,4 +159,3 @@ export default function AppLayout({ children }: AppLayoutProps) {
     </div>
   );
 }
-
