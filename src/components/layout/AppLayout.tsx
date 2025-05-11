@@ -81,8 +81,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
     icon: React.cloneElement(icon, { className: "mr-2 h-4 w-4" }),
   }));
   
+  const pathSegments = useMemo(() => pathname.split('/').filter(Boolean), [pathname]);
+
   const breadcrumbItems = useMemo(() => {
-    const pathSegments = pathname.split('/').filter(Boolean);
     const breadcrumbs: BreadcrumbItem[] = [];
 
     if (pathSegments.length === 0 && pathname === '/') { // Root path
@@ -118,12 +119,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 const parentTabKey = isUserCommunity ? 'your-communities' : 'discover';
                 const parentTabDetail = communityPageTabsDetails[parentTabKey];
                 
-                // 2. Add "Your Communities" or "Discover & Features"
-                if (parentTabDetail) {
+                // 2. Add "Your Communities" or "Discover & Features" as a link
+                 if (parentTabDetail) {
                     breadcrumbs.push({ 
                         name: parentTabDetail.name, 
                         href: `/communities?tab=${parentTabDetail.hrefPart}`, 
-                        icon: React.cloneElement(parentTabDetail.icon, {className: "h-5 w-5"}), 
+                        // icon: React.cloneElement(parentTabDetail.icon, {className: "h-5 w-5"}), // Icon removed to avoid duplication from tabselector
                         type: 'link' 
                     });
                 }
@@ -161,7 +162,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         }
     }
     return breadcrumbs;
-  }, [pathname, searchParams]);
+  }, [pathname, searchParams, pathSegments]);
 
 
   if (loading || !mounted) {
@@ -176,10 +177,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
   }
   
   const isCommunityPage = pathname.startsWith('/communities');
-  // Check if it's a specific community page or sub-page (e.g., /communities/xyz or /communities/xyz/abc)
-  const isSpecificCommunityPage = isCommunityPage && pathname.split('/').length > 2;
-  // Only show main horizontal tabs if not on a specific community page (where sub-page tabs take precedence)
-  const showHorizontalTabs = layoutMode === 'horizontal' && !isSpecificCommunityPage;
+  const isSpecificCommunityPath = isCommunityPage && pathSegments.length > 1; // e.g., /communities/[id] or /communities/[id]/[subpage]
+  
+  // Show main horizontal tabs if layoutMode is horizontal AND (not on communities page OR on main /communities page but not a specific one)
+  const showHorizontalTabs = layoutMode === 'horizontal' && (!isCommunityPage || (isCommunityPage && !isSpecificCommunityPath));
 
 
   return (
@@ -249,34 +250,35 @@ export default function AppLayout({ children }: AppLayoutProps) {
               const linkItem = item as LinkBreadcrumbItem;
               // Determine if this link item is the "Communities" main link when on a specific community path
               const isCommunitiesMainLink = linkItem.href === '/communities' && index === 0 && pathSegments[0] === 'communities' && pathSegments.length > 1;
+              const isSecondLevelCommunitiesLink = linkItem.href.startsWith('/communities?tab=') && index === 1 && pathSegments[0] === 'communities' && pathSegments.length > 1;
+
 
               return (
                 <React.Fragment key={key}>
-                  {/* Render ChevronRight conditionally */}
-                  {index > 0 && !isCommunitiesMainLink && ( // Regular static chevron for subsequent items, unless it's handled by a specific dropdown logic below
-                     <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                  )}
-
-                  {/* Special Dropdown for "Your Communities" / "Discover" when navigating within a specific community */}
-                  {isCommunitiesMainLink && breadcrumbItems[index+1]?.href?.startsWith('/communities?tab=') && (
-                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 flex-shrink-0">
-                          <ChevronRight className="h-5 w-5" />
-                          <span className="sr-only">Select community section</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start">
-                        <DropdownMenuLabel>Community Sections</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {Object.values(communityPageTabsDetails).map(tabDetail => (
-                          <DropdownMenuItem key={tabDetail.hrefPart} onClick={() => router.push(`/communities?tab=${tabDetail.hrefPart}`)} className="cursor-pointer">
-                            {React.cloneElement(tabDetail.icon, { className: "mr-2 h-4 w-4" })}
-                            <span>{tabDetail.name}</span>
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                  {/* Render ChevronRight conditionally or a Dropdown for community context */}
+                  {index > 0 && (
+                    isSecondLevelCommunitiesLink ? ( // If it's "Your Communities" or "Discover" under a specific community context
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 flex-shrink-0">
+                            <ChevronRight className="h-5 w-5" />
+                            <span className="sr-only">Select community tab view</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          <DropdownMenuLabel>Switch Tab View</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          {Object.values(communityPageTabsDetails).map(tabDetail => (
+                            <DropdownMenuItem key={tabDetail.hrefPart} onClick={() => router.push(`/communities?tab=${tabDetail.hrefPart}`)} className="cursor-pointer">
+                               {React.cloneElement(tabDetail.icon, { className: "mr-2 h-4 w-4" })}
+                              <span>{tabDetail.name}</span>
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) : ( // Regular static chevron for other subsequent items
+                       !isCommunitiesMainLink && <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                    )
                   )}
                   
                   <Link href={linkItem.href} className="flex items-center gap-1 hover:underline flex-shrink-0" title={linkItem.name}>
@@ -357,22 +359,33 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </div>
       </header>
       
-      {showHorizontalTabs && ( // Logic updated to use showHorizontalTabs
-        <Tabs value={isCommunityPage ? '/communities' : pathname} className="sticky top-16 z-20 w-full border-b bg-background/90 backdrop-blur-sm">
-          <TabsList className="grid w-full grid-cols-5 h-auto">
-            {Object.values(staticPageDetails).map(page => (
-              <TabsTrigger key={page.href} value={page.href} asChild className="flex-shrink-0 data-[state=active]:shadow-lg data-[state=active]:bg-card">
-                <Link href={page.href} className="flex flex-col items-center justify-center h-auto py-2.5 px-2 text-xs">
-                  {React.cloneElement(page.icon, {className: "h-5 w-5 mb-1"})}
-                  <span>{page.name}</span>
-                </Link>
-              </TabsTrigger>
-            ))}
+      {showHorizontalTabs && (
+        <Tabs value={pathname === '/communities' ? (searchParams.get('tab') ? `/communities?tab=${searchParams.get('tab')}` : '/communities?tab=your-communities') : pathname} className="sticky top-16 z-20 w-full border-b bg-background/90 backdrop-blur-sm">
+            <TabsList className={`grid w-full ${pathname === '/communities' ? 'grid-cols-2' : 'grid-cols-5'} h-auto`}>
+            {pathname === '/communities' ? (
+              Object.values(communityPageTabsDetails).map(tab => (
+                <TabsTrigger key={tab.hrefPart} value={`/communities?tab=${tab.hrefPart}`} asChild className="flex-shrink-0 data-[state=active]:shadow-lg data-[state=active]:bg-card">
+                   <Link href={`/communities?tab=${tab.hrefPart}`} className="flex flex-col items-center justify-center h-auto py-2.5 px-2 text-xs">
+                     {React.cloneElement(tab.icon, {className: "h-5 w-5 mb-1"})}
+                     <span>{tab.name}</span>
+                   </Link>
+                </TabsTrigger>
+              ))
+            ) : (
+              Object.values(staticPageDetails).map(page => (
+                <TabsTrigger key={page.href} value={page.href} asChild className="flex-shrink-0 data-[state=active]:shadow-lg data-[state=active]:bg-card">
+                  <Link href={page.href} className="flex flex-col items-center justify-center h-auto py-2.5 px-2 text-xs">
+                    {React.cloneElement(page.icon, {className: "h-5 w-5 mb-1"})}
+                    <span>{page.name}</span>
+                  </Link>
+                </TabsTrigger>
+              ))
+            )}
           </TabsList>
         </Tabs>
       )}
 
-      <main className={`flex-1 p-4 sm:p-6 md:p-8 ${layoutMode === 'stacked' || (layoutMode === 'horizontal' && (isGuest || isSpecificCommunityPage)) ? 'pb-20 md:pb-8' : 'pb-8'}`}>
+      <main className={`flex-1 p-4 sm:p-6 md:p-8 ${layoutMode === 'stacked' || (layoutMode === 'horizontal' && (isGuest || isSpecificCommunityPath)) ? 'pb-20 md:pb-8' : 'pb-8'}`}>
         <div className="mx-auto max-w-6xl space-y-6">
          {children}
         </div>
@@ -381,7 +394,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         © {new Date().getFullYear()} ConnectMe. All rights reserved.
       </footer>
 
-      {(layoutMode === 'stacked' || (layoutMode === 'horizontal' && (isGuest || isSpecificCommunityPage ))) && (
+      {(layoutMode === 'stacked' || (layoutMode === 'horizontal' && (isGuest || isSpecificCommunityPath ))) && (
         <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card p-1 shadow-[0_-2px_5px_-1px_rgba(0,0,0,0.1)] md:hidden">
           <div className="grid grid-cols-4 gap-1">
             {mobileNavItems.map((item) => (
@@ -402,3 +415,4 @@ export default function AppLayout({ children }: AppLayoutProps) {
     </div>
   );
 }
+
