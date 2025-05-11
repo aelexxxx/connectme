@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import * as React from 'react'; // Import React
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { Home, User, Users, LogOut, Settings, Terminal, UserCircle, ChevronRight, Settings2, UserCog } from 'lucide-react';
+import { Home, User, Users, LogOut, Settings, Terminal, UserCircle, ChevronRight, Settings2, UserCog, Shapes } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -26,6 +26,7 @@ const pageDetails: { [key: string]: { name: string; icon: JSX.Element } } = {
   '/dashboard': { name: 'Dashboard', icon: <Home className="h-5 w-5" /> },
   '/profile': { name: 'Profile', icon: <UserCircle className="h-5 w-5" /> },
   '/connections': { name: 'Connections', icon: <Users className="h-5 w-5" /> },
+  '/communities': { name: 'Communities', icon: <Shapes className="h-5 w-5" /> },
   '/settings': { name: 'Settings', icon: <UserCog className="h-5 w-5" /> },
 };
 
@@ -46,7 +47,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const mobileNavItems = [
     { href: '/dashboard', label: 'Dashboard', icon: <Home className="h-5 w-5" /> },
     { href: '/profile', label: 'Profile', icon: <User className="h-5 w-5" /> }, // User icon for mobile simplicity
-    { href: '/connections', label: 'Connections', icon: <Users className="h-5 w-5" /> },
+    { href: '/connections', label: 'Network', icon: <Users className="h-5 w-5" /> }, // Changed label for brevity
+    { href: '/communities', label: 'Groups', icon: <Shapes className="h-5 w-5" /> }, // Changed label for brevity
   ];
   
   const currentPage = pageDetails[pathname] || { name: 'Page', icon: <Terminal className="h-5 w-5" /> };
@@ -77,7 +79,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <div className="flex items-center gap-1 text-lg font-semibold"> {/* Adjusted gap */}
           <Link href="/dashboard" className="flex items-center gap-2 text-primary">
             <Terminal className="h-6 w-6" />
-            <span>ConnectMe</span>
+            <span className="hidden sm:inline">ConnectMe</span>
           </Link>
           
           <DropdownMenu>
@@ -164,7 +166,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       </header>
       
       <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card p-1 shadow-[0_-2px_5px_-1px_rgba(0,0,0,0.1)] md:hidden">
-        <div className="grid grid-cols-3 gap-1">
+        <div className="grid grid-cols-4 gap-1"> {/* Adjusted grid-cols for 4 items */}
           {mobileNavItems.map((item) => (
             <Link
               key={`mobile-${item.label}`}
@@ -191,4 +193,3 @@ export default function AppLayout({ children }: AppLayoutProps) {
     </div>
   );
 }
-
