@@ -116,17 +116,18 @@ export default function AppLayout({ children }: AppLayoutProps) {
                     const userCommunityIdsForDemo = mockCommunities.length > 0 ? [mockCommunities[0].id, ...(mockCommunities.length > 1 ? [mockCommunities[1].id] : [])] : [];
                     const isUserCommunity = userCommunityIdsForDemo.includes(community.id);
 
-                    if (isUserCommunity) {
-                        const yourCommunitiesTabDetail = communityPageTabsDetails['your-communities'];
-                        if (yourCommunitiesTabDetail) {
-                            breadcrumbs.push({ 
-                                name: yourCommunitiesTabDetail.name, 
-                                href: `/communities?tab=${yourCommunitiesTabDetail.hrefPart}`, 
-                                icon: React.cloneElement(yourCommunitiesTabDetail.icon, {className: "h-5 w-5"}), 
-                                type: 'link' 
-                            });
-                        }
-                    } // No "else" to add "Discover" for simplicity, matching user's "Your Communities" example.
+                    // Determine the base tab for this community (Your Communities or Discover)
+                    const baseTabKey = isUserCommunity ? 'your-communities' : 'discover'; // Default to 'discover' if not in user's list
+                    const baseTabDetail = communityPageTabsDetails[baseTabKey];
+                    
+                    if (baseTabDetail) {
+                        breadcrumbs.push({ 
+                            name: baseTabDetail.name, 
+                            href: `/communities?tab=${baseTabDetail.hrefPart}`, 
+                            icon: React.cloneElement(baseTabDetail.icon, {className: "h-5 w-5"}), 
+                            type: 'link' 
+                        });
+                    }
                     
                     breadcrumbs.push({ name: community.name, href: `/communities/${community.id}`, type: 'link' }); // Community name, no icon
                     
@@ -197,7 +198,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <div className="flex items-center gap-1 overflow-hidden text-ellipsis whitespace-nowrap">
             {breadcrumbItems.map((item, index) => {
               const key = item.type === 'tabSelector' ? `breadcrumb-tab-selector-${index}` : `${(item as LinkBreadcrumbItem).href}-${index}`;
-              const isLastItem = index === breadcrumbs.length - 1;
+              const isLastItem = index === breadcrumbItems.length - 1;
 
               if (item.type === 'tabSelector') {
                 return (
@@ -355,3 +356,4 @@ export default function AppLayout({ children }: AppLayoutProps) {
     </div>
   );
 }
+
