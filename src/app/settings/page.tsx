@@ -14,14 +14,25 @@ import { Sun, Moon, Laptop, Bell, Lock, Trash2, Palette, ShieldAlert, Layers, Wa
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input"; 
+import React, { useEffect } from "react"; // Import useEffect
 
 export default function SettingsPage() {
-  const { settings, updateUserSettings, isGuest, user, deleteAccount } = useAuthSettings();
+  const { settings, updateUserSettings, isGuest, user, deleteAccount, loading: authLoading } = useAuthSettings();
   const { toast } = useToast();
   const router = useRouter();
 
-  if (isGuest || !user) {
-    if (typeof window !== "undefined") router.push("/login");
+  useEffect(() => {
+    // Wait for auth state to load before redirecting
+    if (authLoading) {
+      return;
+    }
+    if (isGuest || !user) {
+      router.push("/login");
+    }
+  }, [isGuest, user, router, authLoading]);
+
+
+  if (authLoading || isGuest || !user) {
     return (
       <AppLayout>
         <div className="flex justify-center items-center h-full">
@@ -64,13 +75,12 @@ export default function SettingsPage() {
   const handleDeleteAccount = () => {
     deleteAccount(); 
     toast({ title: "Account Deleted", description: "Your account has been successfully deleted.", variant: "destructive"});
+    // router.push('/login'); // AuthContext will handle redirect on logout/delete
   };
 
 
   return (
     <AppLayout>
-      {/* Page title and description are now handled by AppLayout header */}
-      {/* Main content is wrapped in Cards */}
       <div className="space-y-8">
         {/* Appearance Settings */}
         <Card className="shadow-lg">
@@ -79,7 +89,6 @@ export default function SettingsPage() {
               <Palette className="mr-2 h-6 w-6 text-primary/80" />
               Appearance
             </CardTitle>
-            <CardDescription>Customize the look and feel of the application.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
@@ -143,7 +152,7 @@ export default function SettingsPage() {
                       <Input
                         id="glass-color-1"
                         type="color"
-                        value={settings.glassmorphismOptions?.gradientColor1 || '#60a5fa'}
+                        value={settings.glassmorphismOptions?.gradientColor1 || '#60a5fa'} // Default to a visible color for picker
                         onChange={(e) => handleGlassmorphismOptionChange('gradientColor1', e.target.value)}
                         className="mt-1 w-full h-10 p-1"
                       />
@@ -153,7 +162,7 @@ export default function SettingsPage() {
                       <Input
                         id="glass-color-2"
                         type="color"
-                        value={settings.glassmorphismOptions?.gradientColor2 || '#c084fc'}
+                        value={settings.glassmorphismOptions?.gradientColor2 || '#c084fc'} // Default to a visible color for picker
                         onChange={(e) => handleGlassmorphismOptionChange('gradientColor2', e.target.value)}
                         className="mt-1 w-full h-10 p-1"
                       />
@@ -167,17 +176,6 @@ export default function SettingsPage() {
                       onCheckedChange={(value) => handleGlassmorphismOptionChange('animatedGradient', value)}
                     />
                   </div>
-                   {/* Blur Intensity - future enhancement
-                   <div>
-                    <Label htmlFor="blur-intensity">Blur Intensity ({settings.glassmorphismOptions?.blurIntensity || 10}px)</Label>
-                    <Input 
-                      id="blur-intensity" 
-                      type="range" min="0" max="30" 
-                      value={settings.glassmorphismOptions?.blurIntensity || 10}
-                      onChange={(e) => handleGlassmorphismOptionChange('blurIntensity', parseInt(e.target.value))}
-                      className="w-full mt-1"
-                    />
-                  </div> */}
                 </CardContent>
               </Card>
             )}
@@ -192,7 +190,6 @@ export default function SettingsPage() {
               <Bell className="mr-2 h-6 w-6 text-primary/80" />
               Notification Preferences
             </CardTitle>
-            <CardDescription>Choose how you want to be notified.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {[
@@ -219,7 +216,6 @@ export default function SettingsPage() {
               <Lock className="mr-2 h-6 w-6 text-primary/80" />
               Privacy Settings
             </CardTitle>
-            <CardDescription>Control how your information is shared.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {[
@@ -245,7 +241,6 @@ export default function SettingsPage() {
               <ShieldAlert className="mr-2 h-6 w-6" />
               Account Management
             </CardTitle>
-            <CardDescription className="text-destructive/90">Manage your account data and status.</CardDescription>
           </CardHeader>
           <CardContent>
             <AlertDialog>
