@@ -1,6 +1,7 @@
 
 "use client";
 import type { ReactNode } from 'react';
+import * as React from 'react'; // Import React
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { Home, User, Users, LogOut, Settings, Terminal, UserCircle, ChevronRight, Settings2, UserCog } from 'lucide-react';
