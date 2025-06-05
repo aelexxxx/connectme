@@ -1,7 +1,7 @@
-import AppLayout from "@/components/layout/AppLayout";
 import { Suspense } from "react";
-import { Loader2 } from "lucide-react";
+import AppLayout from "@/components/layout/AppLayout";
 import CommunitiesContent from "./_components/CommunitiesContent";
+import { Loader2 } from "lucide-react";
 
 export default function CommunitiesPage() {
   return (
