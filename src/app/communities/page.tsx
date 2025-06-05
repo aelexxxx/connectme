@@ -1,3 +1,5 @@
+'use client';
+
 import { Suspense } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import CommunitiesContent from "./_components/CommunitiesContent";
